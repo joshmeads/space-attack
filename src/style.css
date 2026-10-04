@@ -767,6 +767,42 @@ h2 {
   font-size: 8px;
   margin-left: 5px;
 }
+.theme-surface {
+  position: absolute;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+}
+.theme-picker {
+  margin-top: 12px;
+}
+.theme-picker button {
+  border: 1px solid #42575b;
+  background: transparent;
+  color: #8eaaa9;
+  padding: 6px 13px;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+.theme-picker kbd {
+  color: var(--yellow);
+  margin-left: 12px;
+}
+@media (max-width: 699px) {
+  .theme-picker {
+    margin-top: 8px;
+  }
+  .theme-picker button {
+    font-size: 6px;
+    padding: 4px 9px;
+  }
+  .title-menu .menu-footnote {
+    margin-top: 9px;
+  }
+  .title-menu .menu-controls {
+    margin-top: 12px;
+  }
+}
 @media (max-width: 699px) {
   .screen-overlay .gameover-menu {
     padding: 7px 0;
