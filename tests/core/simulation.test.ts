@@ -5,6 +5,7 @@ import {
   EnemyKind,
   EnemyMode,
   GamePhase,
+  PLAYER_FIRE_INTERVAL_TICKS,
   ROW_SCORES,
   createGame,
   getDifficulty,
@@ -63,9 +64,9 @@ describe('bullets and collisions', () => {
     state.player.x = 15;
     const pool = state.playerBullets;
     const slots = [...pool];
-    advance(state, CONFIG.playerFireInterval + 1, input({ move: 1, fire: true }));
+    advance(state, PLAYER_FIRE_INTERVAL_TICKS + 1, input({ move: 1, fire: true }));
     expect(pool.filter((bullet) => bullet.active)).toHaveLength(2);
-    advance(state, CONFIG.playerFireInterval, input({ fire: true }));
+    advance(state, PLAYER_FIRE_INTERVAL_TICKS, input({ fire: true }));
     expect(pool.filter((bullet) => bullet.active)).toHaveLength(2);
     expect(pool.every((bullet) => bullet.vx === 0)).toBe(true);
     const enemy = enemyAt(state);
@@ -74,12 +75,64 @@ describe('bullets and collisions', () => {
     Object.assign(bullet, { x: enemy.x, y: enemy.y, vy: 0 });
     step(state, input());
     expect(bullet.active).toBe(false);
-    state.player.fireCooldown = 0;
-    advance(state, CONFIG.hitStopTicks + 1, input({ fire: true }));
+    advance(state, CONFIG.hitStopTicks + PLAYER_FIRE_INTERVAL_TICKS, input({ fire: true }));
     expect(bullet.active).toBe(true);
     expect(state.playerBullets).toBe(pool);
     expect(pool).toEqual(slots);
   });
+
+  it.each(['held', 'rapid presses'])('enforces a 24-tick cadence for %s fire', (pattern) => {
+    const state = playing();
+    state.player.x = 15;
+    const shotTicks: number[] = [];
+    for (let tick = 0; tick < 100; tick += 1) {
+      const events = step(state, input({ fire: pattern === 'held' || tick % 2 === 0 }));
+      if (events.some((event) => event.kind === 'shot' && event.owner === 'player')) {
+        shotTicks.push(tick);
+      }
+      expect(state.playerBullets.filter((bullet) => bullet.active).length).toBeLessThanOrEqual(2);
+    }
+    expect(shotTicks).toEqual([0, 24, 48, 72, 96]);
+  });
+
+  it.each(['hit', 'cancel'])(
+    'does not bypass cooldown when a player bullet is removed by %s',
+    (cause) => {
+      const state = playing();
+      state.player.x = 15;
+      step(state, input({ fire: true }));
+      const bullet = state.playerBullets[0];
+      if (!bullet) throw new Error('Missing player bullet');
+      if (cause === 'hit') {
+        const target = enemyAt(state);
+        Object.assign(bullet, { x: target.x, y: target.y, vy: 0 });
+      } else {
+        enemyShot(state, bullet.x, bullet.y);
+      }
+      const removed = step(state, input({ fire: true }));
+      expect(removed.some((event) => event.kind === (cause === 'hit' ? 'kill' : 'cancel'))).toBe(
+        true,
+      );
+      expect(removed.some((event) => event.kind === 'shot' && event.owner === 'player')).toBe(
+        false,
+      );
+      expect(bullet.active).toBe(false);
+      expect(state.player.fireCooldown).toBe(23);
+      advance(state, state.hitStopTicks, input({ fire: true }));
+      const waiting = advance(state, state.player.fireCooldown - 1, input({ fire: true }));
+      expect(waiting.some((event) => event.kind === 'shot' && event.owner === 'player')).toBe(
+        false,
+      );
+      expect(bullet.active).toBe(false);
+      expect(state.player.fireCooldown).toBe(1);
+      const fired = step(state, input({ fire: true }));
+      expect(
+        fired.filter((event) => event.kind === 'shot' && event.owner === 'player'),
+      ).toHaveLength(1);
+      expect(bullet.active).toBe(true);
+      expect(state.player.fireCooldown).toBe(24);
+    },
+  );
 
   it.each([EnemyMode.Formation, EnemyMode.Diving])('hits an enemy in %s', (mode) => {
     const state = playing();

@@ -13,7 +13,7 @@ export const CONFIG = {
   bulletHalfWidth: 1,
   bulletHalfHeight: 3,
   playerBulletSpeed: 4.5,
-  playerFireInterval: 12,
+  playerFireIntervalMs: 400,
   playerBulletCount: 2,
   enemyBulletCount: 64,
   startingLives: 3,
@@ -47,6 +47,10 @@ export const CONFIG = {
   flagshipDiveScore: 150,
   escortBonus: 150,
 } as const;
+
+export const PLAYER_FIRE_INTERVAL_TICKS = Math.ceil(
+  (CONFIG.playerFireIntervalMs * CONFIG.tickRate) / 1000,
+);
 
 export const ROW_SCORES: readonly number[] = [60, 50, 40, 30, 20, 20];
 
