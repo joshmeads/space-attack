@@ -1,5 +1,7 @@
 # Space Attack tasks
 
+Active tier: **Tier 1**. Advance to Tier 2 only after the Tier 1 build is deployed and CI passes. Advance to Tier 3 only after Tier 2 verification passes. The overall goal stays active until all requested tiers are delivered or a concrete external blocker is reported.
+
 - [x] Establish shared contracts and module ownership in PLAN.md.
 - [ ] Set up Bun, Vite Plus, Pixi, Playwright and simple CI.
 - [ ] Implement deterministic simulation and focused core tests.

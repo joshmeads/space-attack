@@ -11,7 +11,7 @@ bun install
 bun run dev
 ```
 
-Open `http://localhost:5173/space-attack/`.
+Open `http://localhost:5183/space-attack/`.
 
 ```sh
 bun run check

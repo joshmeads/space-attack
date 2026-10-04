@@ -2,11 +2,11 @@ import { defineConfig } from 'vite-plus';
 
 export default defineConfig({
   base: '/space-attack/',
-  server: { host: '0.0.0.0', port: 5173, strictPort: true },
-  preview: { host: '0.0.0.0', port: 5173, strictPort: true },
+  server: { host: '0.0.0.0', port: 5183, strictPort: true },
+  preview: { host: '0.0.0.0', port: 5183, strictPort: true },
   build: { target: 'es2022' },
   test: {
-    include: ['src/core/**/*.test.ts', 'tests/core/**/*.test.ts', 'tests/unit/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/core/**/*.test.ts', 'tests/unit/**/*.test.ts'],
   },
   lint: {
     ignorePatterns: ['dist/**', 'playwright-report/**', 'test-results/**'],
