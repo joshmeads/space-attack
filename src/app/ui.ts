@@ -1,4 +1,5 @@
 import { GamePhase, type GameState } from '../core/types';
+import type { HighScore } from '../platform/storage';
 import type { MenuAction } from './input';
 
 export class GameUI {
@@ -48,7 +49,7 @@ export class GameUI {
     audioAvailable = false,
   ): void {
     this.score.textContent = String(state.score).padStart(6, '0');
-    this.best.textContent = String(Math.max(previousBest, state.score)).padStart(6, '0');
+    this.best.textContent = String(previousBest).padStart(6, '0');
     this.wave.textContent = String(state.wave).padStart(2, '0');
     this.fuel.style.width = `${state.fuel}%`;
     this.fuel.setAttribute('aria-valuenow', String(state.fuel));
@@ -80,6 +81,67 @@ export class GameUI {
         this.overlay.innerHTML = '';
         break;
     }
+  }
+
+  initials(): string {
+    const input = this.overlay.querySelector<HTMLInputElement>('#initials');
+    return (input?.value ?? 'AAA')
+      .toUpperCase()
+      .replace(/[^A-Z]/g, '')
+      .padEnd(3, 'A')
+      .slice(0, 3);
+  }
+
+  showScores(
+    scores: readonly HighScore[],
+    qualifies: boolean,
+    submit: (initials: string) => void,
+  ): void {
+    const entry = this.overlay.querySelector<HTMLElement>('#score-entry');
+    if (!entry) return;
+    entry.replaceChildren();
+    if (qualifies) {
+      const form = document.createElement('form');
+      const label = document.createElement('label');
+      label.htmlFor = 'initials';
+      label.textContent = 'TOP 5 PILOT · ENTER INITIALS';
+      const input = document.createElement('input');
+      input.id = 'initials';
+      input.name = 'initials';
+      input.maxLength = 3;
+      input.value = 'AAA';
+      input.autocomplete = 'off';
+      input.autocapitalize = 'characters';
+      input.spellcheck = false;
+      input.setAttribute('aria-label', 'Three letter initials');
+      input.addEventListener('input', () => {
+        input.value = input.value
+          .toUpperCase()
+          .replace(/[^A-Z]/g, '')
+          .slice(0, 3);
+      });
+      const button = document.createElement('button');
+      button.className = 'secondary-button';
+      button.type = 'submit';
+      button.textContent = 'SAVE SCORE';
+      form.append(label, input, button);
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        submit(this.initials());
+      });
+      entry.append(form);
+    }
+    const table = document.createElement('div');
+    table.className = 'score-table';
+    table.setAttribute('aria-label', 'Local top five scores');
+    for (const [index, score] of scores.entries()) {
+      const name = document.createElement('span');
+      name.textContent = `${index + 1}. ${score.initials}`;
+      const value = document.createElement('strong');
+      value.textContent = String(score.score).padStart(6, '0');
+      table.append(name, value);
+    }
+    entry.append(table);
   }
 
   refresh(): void {
