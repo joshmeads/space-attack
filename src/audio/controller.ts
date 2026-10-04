@@ -1,5 +1,7 @@
 import { EnemyMode, GamePhase } from '../core/types';
 import type { DeepReadonly, GameEvent, GameState } from '../core/types';
+import { classicMusic } from '../themes/classic/music';
+import { classicSounds } from '../themes/classic/sounds';
 import { modernMusic } from '../themes/modern/music';
 import { modernSounds } from '../themes/modern/sounds';
 import { retroMusic } from '../themes/retro/music';
@@ -62,7 +64,7 @@ export class AudioController {
   private unlocking: Promise<void> | null = null;
   private scheduleId: number | null = null;
   private activeSources = new Set<AudioBufferSourceNode>();
-  private currentTheme: ThemeId = 'retro';
+  private currentTheme: ThemeId = 'classic';
   private noteIndex = 0;
   private bpm = 0;
   private musicPlaying = false;
@@ -236,6 +238,7 @@ export class AudioController {
       return { score, lead, bass, drum, buffers: buildBuffers(bank) };
     };
     this.themes = {
+      classic: createTheme(classicMusic, classicSounds),
       retro: createTheme(retroMusic, retroSounds),
       modern: createTheme(modernMusic, modernSounds),
     };
