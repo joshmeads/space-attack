@@ -2,3 +2,6 @@
 - Tier 1 contains keyboard controls, deterministic fixed ticks, menus, responsive layout, auto-pause and explicit debug inputs. Touch button markup is included but secondary features remain gated until the first deployment.
 - The core owns all gameplay transitions. New game constructs a new state object; the app only sends commands to existing simulation state.
 - Debug mode exposes cloned snapshots and neutral deterministic tick advancement. QA can reach natural fuel exhaustion and game over without mutating gameplay fields.
+- A separate AI core provides a silent title backdrop and optional seeded `demo=1` run. Autonomous runs bypass run, score and preferences writes. Reloaded player runs start paused with the saved RNG and field intact.
+- Local high scores and preferences use separate validated storage entries. A new run compares against the prior high score; a qualifying game-over asks for exactly three letters and defaults to AAA if the player begins another run without submitting.
+- Persistence uses synchronous writes at pause, lifecycle suspension and wave transitions; periodic writes are scheduled during browser idle every four seconds. Generated audio unlock is initiated by a real keyboard or touch gesture.
