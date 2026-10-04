@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vp dev",
     "build": "vp build",
+    "build:sites": "vp build --base /",
     "preview": "vp preview",
     "check": "vp check",
     "format": "vp fmt",

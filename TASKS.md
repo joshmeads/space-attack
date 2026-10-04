@@ -13,13 +13,17 @@ Active tier: **Tier 3**. Advance to Tier 2 only after the Tier 1 build is deploy
 - [x] Add generated music, effects, reduced motion and visual feedback.
 - [x] Add silent title demo and screensaver.
 - [x] Verify Tier 2 on integration and main.
-- [ ] Add deterministic benchmark and modern theme if preceding tiers remain stable.
+- [x] Add deterministic benchmark and Modern theme after preceding tiers passed.
 - [ ] Complete final QA, README and decision record.
 
 The scope now includes the user's later Classic default and shared bare layout request.
 
-- [ ] Add Classic as the default third theme with original generated art and audio.
+- [x] Add Classic as the default third theme with original generated art and audio.
 - [ ] Remove all surrounding cabinet/header/footer/control-caption chrome.
 - [ ] Share the same 41-enemy pyramid, playfield and HUD geometry across every theme.
-- [ ] Preserve valid legacy saved formations through hydration and theme changes.
+- [x] Preserve valid legacy saved formations through hydration and theme changes.
 - [ ] Verify the updated replay baseline, three-wave progression, theme continuity and bare desktop/mobile layout.
+
+- [ ] Verify identical maximum fitted 4:3 bounds across Classic, Retro and Modern.
+- [ ] Verify generated pause labels, aligned M/N hints and R restart.
+- [ ] Publish the final verified build to Codex Sites and retain GitHub Pages.

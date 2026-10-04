@@ -2,13 +2,13 @@
 
 | Decision                                                                         | Reason                                                                             |
 | -------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Use a 320 by 240 logical playfield and 60 Hz simulation.                         | It supports crisp integer scaling and a desktop CRT proportions.                   |
+| Use a 320 by 240 logical playfield and 60 Hz simulation.                         | It keeps deterministic geometry and desktop CRT proportions.                       |
 | Keep a mutable, serializable core state behind deeply readonly theme interfaces. | Fixed pools avoid bullet churn while renderer types enforce ownership.             |
 | Store the uint32 RNG and all simulation timers in each save.                     | Continuing a save must preserve the same future inputs and outcomes.               |
 | Use localStorage only with independent run, preference and score entries.        | The user explicitly removed IndexedDB and prioritizes synchronous lifecycle saves. |
 | Count lives as total ships remaining including the current ship.                 | Three starting lives therefore permit three deaths.                                |
 | Award one extra life when the score first crosses 5000.                          | The request specifies a single bonus threshold.                                    |
-| Start with 36 enemies: four central flagships and four rows of eight.            | This fits the 4:3 playfield and keeps flagship groups distinct.                    |
+| Initial release used 36 enemies; the current formation has 41.                   | The later reference-guided six-row pyramid supersedes the initial formation.       |
 | Default fuel drains by three of 100 units every two active seconds.              | This creates visible retro chunks and about 68 seconds to clear a wave.            |
 | Freeze core simulation for three ticks on a kill.                                | Hit-stop is deterministic and independent of theme.                                |
 | Keep title and benchmark simulations separate from the player run.               | Attract play must never overwrite a save or produce a leaderboard result.          |
@@ -69,3 +69,24 @@ Legacy version-1 saves keep their existing 36-slot formation and positions until
 The user requested evenly spaced fire derived from the maximum of two active player shots. A shot starts at y=205.5 and leaves strictly below y=-3 at 4.5 pixels per simulation tick. The minimum exit tick is floor(208.5 / 4.5) + 1 = 47. Dividing that lifetime between two slots gives ceil(47 / 2) = 24 ticks, or 400 ms at 60 Hz. Hits and bullet cancellations free slots without bypassing that cooldown. This intentionally changes the replay baseline; presentation size and theme have no effect on cadence.
 
 The user then requested an editable 400 ms setting. `CONFIG.playerFireIntervalMs` is authoritative; `PLAYER_FIRE_INTERVAL_TICKS = ceil(ms * tickRate / 1000)` derives the 24-tick default. This retains the approved default spacing while keeping tuning in one value. The user also removed all slogans and decorative wording; remaining copy identifies game state, controls or actions.
+
+## Tier 2 accepted; Tier 3 integration
+
+GitHub Actions run 37185374820 passed validation and Pages deployment. The public index and all eight preloaded assets matched the tested Tier 2 build byte for byte. The Tier 2 gate included 42 unit tests, three browser tests, exact save continuation, touch controls, high-score entry, gesture-only audio loading and desktop/mobile visual checks. Tier 3 is now active; its implementation is integrated while the expanded Classic scope undergoes final combined QA.
+
+## Consolidated implementation decisions
+
+- Core uses xorshift32 and stores its RNG state. Bullet pools and event buffers are reused. Death clears bullets and returns surviving divers to their stored formation slots. Wave-one flagship groups respect the smaller concurrency limit; later waves permit both escorts. Final-wave kills enter the banner before fuel depletion can take another life.
+- Hydration accepts only complete supported formations and validates IDs, home positions, finite coordinates, bounded timers, lives and bullet pools. Both original and compact 36-enemy saves retain their exact state until the next wave creates 41 enemies. Preferences and top-five scores use independent entries, and storage errors do not stop play.
+- Classic uses original generated monochrome grids and angular glyphs. Retro and Modern retain distinct six-row catalogues, including the added blue Raider. All themes use shared core positions and HUD anchors. The disabled WebGPU flag fails explicitly before canvas allocation if enabled; every shipped renderer requires an actual WebGL 2 context.
+- Tone and ZZFX load after a gesture unlocks a shared native AudioContext. Original loops are Signal Watch, Orbital Patrol and Afterburn Horizon. Synth sets and zero-randomness effect buffers are cached. Music and effects have separate buses; Classic and Retro pause immediately, Modern fades over 120 ms. Demo events never enter player audio.
+- Benchmark measures visible RAF intervals, not renderer CPU duration. A 3600-sample ring provides recent mean and percentiles; totals and estimated dropped frames span the run. Hidden-tab gaps are excluded. Dropped frames are an estimate against 60 Hz, not a hardware measurement.
+- The final 400 ms cadence intentionally changes the replay digest. The frozen seed-1982 replay ends with 890 points and 27 kills. A natural AI run with seed 123 destroyed 123 enemies across three complete waves, entered wave four at input tick 8237 with 5050 points and four lives, then reached game over after 1415 idle ticks. Seed 1982 now dies during wave three; no other balance setting was changed to conceal that result. All 41 core tests passed before final combined verification.
+
+## Latest presentation and hosting instructions
+
+All themes fill the same maximum available 4:3 area. Classic and Retro keep their 320 by 240 nearest-neighbor raster and may scale by a fractional CSS factor; Modern uses a full-resolution buffer inside identical bounds. This user instruction supersedes the earlier whole-number-only display rule. Outer chrome and slogans are removed. Generated pixel labels identify pause actions, M/N hints align in settings rows, and R starts a fresh state only while paused.
+
+Codex Sites is now the requested primary host, with GitHub Pages retained. Final publication remains a release gate. Sites verification uses the terminal successful native deployment result and returned URL, following its hosting workflow; GitHub Pages retains public browser verification. Chromium rendering and generated audio have runtime evidence. WebKit could not launch on this Arch host because required system libraries were absent; physical iOS Safari playback remains unverified.
+
+The Sites build uses `bun run build:sites`, which overrides the asset base to `/`. The ordinary build retains `/space-attack/` for GitHub Pages. Both produce `dist`; deployment must build for its target immediately before upload. The Sites project is registered at https://space-attack.secretmoose.chatgpt.site; registration alone is not proof of a working deployment.
