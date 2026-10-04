@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import {
   CONFIG,
   Command,
+  EnemyKind,
   EnemyMode,
   GamePhase,
   ROW_SCORES,
@@ -9,6 +10,7 @@ import {
   getDifficulty,
   step,
 } from '../../src/core';
+import { LEGACY_FORMATION_COLUMNS } from '../../src/core/config';
 import { advance, aimShot, enemyAt, enemyShot, input, isolateEnemy, playing } from './helpers';
 
 describe('state machine', () => {
@@ -58,6 +60,7 @@ describe('state machine', () => {
 describe('bullets and collisions', () => {
   it('keeps straight shots in a fixed two-slot pool and reuses a hit slot', () => {
     const state = playing();
+    state.player.x = 15;
     const pool = state.playerBullets;
     const slots = [...pool];
     advance(state, CONFIG.playerFireInterval + 1, input({ move: 1, fire: true }));
@@ -154,7 +157,7 @@ describe('bullets and collisions', () => {
 });
 
 describe('score, fuel and progression', () => {
-  it.each([0, 1, 2, 3, 4])('scores row %i and doubles diving kills', (row) => {
+  it.each([0, 1, 2, 3, 4, 5])('scores row %i and doubles diving kills', (row) => {
     for (const mode of [EnemyMode.Formation, EnemyMode.Diving]) {
       const state = playing();
       const target = enemyAt(state, row);
@@ -229,7 +232,7 @@ describe('score, fuel and progression', () => {
     expect(state.phase).toBe(GamePhase.Playing);
     expect(state.wave).toBe(2);
     expect(state.fuel).toBe(CONFIG.fuelCapacity);
-    expect(state.enemies.filter((enemy) => enemy.mode !== EnemyMode.Dead)).toHaveLength(36);
+    expect(state.enemies.filter((enemy) => enemy.mode !== EnemyMode.Dead)).toHaveLength(41);
   });
 
   it('derives bounded increasing difficulty for arbitrary later waves', () => {
@@ -243,6 +246,86 @@ describe('score, fuel and progression', () => {
     expect(endless.diveInterval).toBeGreaterThanOrEqual(CONFIG.minimumDiveInterval);
     expect(endless.enemyFireInterval).toBeGreaterThanOrEqual(30);
     expect(Object.values(endless).every(Number.isFinite)).toBe(true);
+  });
+});
+
+describe('shared formation', () => {
+  it('creates six centered rows with two flagships and stable unique IDs', () => {
+    const state = createGame(1982);
+    expect(state.enemies).toHaveLength(41);
+    expect(state.enemies.filter((enemy) => enemy.kind === EnemyKind.Flagship)).toHaveLength(2);
+    expect(
+      Array.from({ length: 6 }, (_, row) =>
+        state.enemies.filter((enemy) => enemy.row === row).map((enemy) => enemy.column),
+      ),
+    ).toEqual([
+      [3, 5],
+      [2, 3, 4, 5, 6],
+      [1, 2, 3, 4, 5, 6, 7],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    ]);
+    expect(new Set(state.enemies.map((enemy) => enemy.id)).size).toBe(41);
+    expect(state.enemies).toEqual(createGame(1983).enemies);
+    expect(state.enemies[0]).toMatchObject({ id: 3, homeX: 142, homeY: 42 });
+    expect(state.enemies[1]).toMatchObject({ id: 5, homeX: 178, homeY: 42 });
+    expect(state.enemies.at(-1)).toMatchObject({ id: 53, homeX: 232, homeY: 97 });
+  });
+
+  it('preserves a legacy saved formation until the next wave', () => {
+    const state = playing();
+    const template = state.enemies[0];
+    if (!template) throw new Error('Missing enemy template');
+    state.enemies = LEGACY_FORMATION_COLUMNS.flatMap((columns, row) =>
+      columns.map((column) => ({
+        ...template,
+        id: row * 8 + column,
+        row,
+        column,
+        kind: row === 0 ? EnemyKind.Flagship : EnemyKind.Drone,
+        homeX: 83 + column * 22,
+        homeY: 42 + row * 15,
+        x: 83 + column * 22,
+        y: 42 + row * 15,
+      })),
+    );
+    state.phase = GamePhase.Paused;
+    state.resumePhase = GamePhase.Playing;
+    const formation = state.enemies;
+    const homes = formation.map(({ id, row, column, homeX, homeY }) => ({
+      id,
+      row,
+      column,
+      homeX,
+      homeY,
+    }));
+    step(state, input({ command: Command.Continue }));
+    advance(state, 30);
+    expect(state.enemies).toBe(formation);
+    expect(state.enemies).toHaveLength(36);
+    expect(
+      state.enemies.map(({ id, row, column, homeX, homeY }) => ({
+        id,
+        row,
+        column,
+        homeX,
+        homeY,
+      })),
+    ).toEqual(homes);
+    for (const enemy of formation) {
+      expect(enemy.x).toBeCloseTo(enemy.homeX + state.formationOffset);
+      expect(enemy.y).toBe(enemy.homeY);
+    }
+    const final = isolateEnemy(state);
+    aimShot(state, final);
+    step(state, input());
+    expect(state.phase).toBe(GamePhase.WaveClear);
+    advance(state, CONFIG.waveClearTicks);
+    expect(state.enemies).not.toBe(formation);
+    expect(state.enemies).toHaveLength(41);
+    expect(state.wave).toBe(2);
+    expect(state.enemies[0]).toMatchObject({ homeX: 142, homeY: 42 });
   });
 });
 

@@ -28,12 +28,12 @@ export const CONFIG = {
   hitStopTicks: 3,
   steeringInterval: 60,
   formationLimit: 14,
-  formationStartX: 83,
+  formationStartX: 88,
   formationStartY: 42,
-  formationSpacingX: 22,
-  formationSpacingY: 15,
-  rows: 5,
-  columns: 8,
+  formationSpacingX: 18,
+  formationSpacingY: 11,
+  rows: 6,
+  columns: 9,
   baseFormationSpeed: 0.25,
   baseDiveSpeed: 1.05,
   baseDiveHorizontalSpeed: 0.7,
@@ -48,7 +48,7 @@ export const CONFIG = {
   escortBonus: 150,
 } as const;
 
-export const ROW_SCORES: readonly number[] = [60, 50, 40, 30, 20];
+export const ROW_SCORES: readonly number[] = [60, 50, 40, 30, 20, 20];
 
 export const TRANSITIONS: Readonly<Record<GamePhase, readonly GamePhase[]>> = {
   [GamePhase.Title]: [GamePhase.Screensaver, GamePhase.Playing],
@@ -64,3 +64,25 @@ export const TRANSITIONS: Readonly<Record<GamePhase, readonly GamePhase[]>> = {
   [GamePhase.Paused]: [GamePhase.Playing, GamePhase.Respawning, GamePhase.WaveClear],
   [GamePhase.GameOver]: [],
 };
+
+export const FORMATION_COLUMNS: readonly (readonly number[])[] = [
+  [3, 5],
+  [2, 3, 4, 5, 6],
+  [1, 2, 3, 4, 5, 6, 7],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8],
+  [0, 1, 2, 3, 4, 5, 6, 7, 8],
+];
+
+export const LEGACY_FORMATION_COLUMNS: readonly (readonly number[])[] = [
+  [2, 3, 4, 5],
+  [0, 1, 2, 3, 4, 5, 6, 7],
+  [0, 1, 2, 3, 4, 5, 6, 7],
+  [0, 1, 2, 3, 4, 5, 6, 7],
+  [0, 1, 2, 3, 4, 5, 6, 7],
+];
+
+export const FORMATION_COUNT = FORMATION_COLUMNS.reduce(
+  (count, columns) => count + columns.length,
+  0,
+);
