@@ -1,5 +1,5 @@
 import { overlaps } from './collision';
-import { CONFIG, ROW_SCORES, TRANSITIONS } from './config';
+import { CONFIG, PLAYER_FIRE_INTERVAL_TICKS, ROW_SCORES, TRANSITIONS } from './config';
 import { getDifficulty } from './difficulty';
 import { createFormation } from './formation';
 import { nextRandom } from './random';
@@ -442,7 +442,7 @@ function playTick(state: GameState, input: InputFrame, events: GameEvent[]): voi
         events,
       )
     ) {
-      state.player.fireCooldown = CONFIG.playerFireInterval;
+      state.player.fireCooldown = PLAYER_FIRE_INTERVAL_TICKS;
     }
   }
   scheduleDive(state, difficulty, events);
