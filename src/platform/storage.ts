@@ -85,7 +85,9 @@ function parsePlayer(value: unknown): PlayerState | null {
     !isNumber(value.y) ||
     !isDirection(value.direction) ||
     !isCount(value.fireCooldown) ||
-    !isCount(value.invulnerableTicks)
+    value.fireCooldown > CONFIG.playerFireInterval ||
+    !isCount(value.invulnerableTicks) ||
+    value.invulnerableTicks > CONFIG.invulnerabilityTicks
   )
     return null;
   if (value.x < 0 || value.x > CONFIG.width || value.y !== CONFIG.playerY) return null;
@@ -125,7 +127,9 @@ function parseEnemy(value: unknown): EnemyState | null {
     !isNumber(value.y) ||
     !isDirection(value.direction) ||
     !isCount(value.steerCooldown) ||
+    value.steerCooldown > CONFIG.steeringInterval ||
     !isCount(value.fireCooldown) ||
+    value.fireCooldown > Math.max(CONFIG.baseEnemyFireInterval, CONFIG.minimumEnemyFireInterval) ||
     !isCount(value.diveGroup)
   )
     return null;
@@ -184,11 +188,21 @@ function parseRun(value: unknown): GameState | null {
     value.fuel < 0 ||
     value.fuel > CONFIG.fuelCapacity ||
     !isCount(value.fuelTicks) ||
+    value.fuelTicks >= CONFIG.fuelInterval ||
     !isCount(value.hitStopTicks) ||
+    value.hitStopTicks > CONFIG.hitStopTicks ||
     !isNumber(value.formationOffset) ||
     !isDirection(value.formationDirection) ||
     !isCount(value.diveCooldown) ||
+    value.diveCooldown > Math.max(CONFIG.baseDiveInterval, CONFIG.minimumDiveInterval) ||
     !isCount(value.nextDiveGroup)
+  )
+    return null;
+  const resumePhase = value.phase === GamePhase.Paused ? value.resumePhase : value.phase;
+  if (
+    (resumePhase === GamePhase.Playing && value.phaseTicks !== 0) ||
+    (resumePhase === GamePhase.Respawning && value.phaseTicks >= CONFIG.respawnTicks) ||
+    (resumePhase === GamePhase.WaveClear && value.phaseTicks >= CONFIG.waveClearTicks)
   )
     return null;
   const player = parsePlayer(value.player);
@@ -208,7 +222,7 @@ function parseRun(value: unknown): GameState | null {
     rng: value.rng,
     tick: value.tick,
     phase: GamePhase.Paused,
-    resumePhase: value.phase === GamePhase.Paused ? value.resumePhase : value.phase,
+    resumePhase,
     phaseTicks: value.phaseTicks,
     wave: value.wave,
     score: value.score,

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test';
 import { CONFIG } from '../core/config';
-import { EnemyKind, EnemyMode, GamePhase } from '../core/types';
+import { createGame, step } from '../core/index';
+import { Command, EMPTY_INPUT, EnemyKind, EnemyMode, GamePhase } from '../core/types';
 import type { GameState } from '../core/types';
 import { chooseDemoInput } from '../demo/ai';
 import {
@@ -109,6 +110,59 @@ describe('run persistence', () => {
     expect(loadRun()).toBeNull();
   });
 
+  it('rejects finite timers beyond simulation limits', () => {
+    const state = fixture();
+    const enormous = Number.MAX_SAFE_INTEGER;
+    const corrupt = [
+      { ...state, hitStopTicks: enormous },
+      { ...state, fuelTicks: CONFIG.fuelInterval },
+      { ...state, diveCooldown: enormous },
+      { ...state, phaseTicks: CONFIG.waveClearTicks },
+      {
+        ...state,
+        phase: GamePhase.Paused,
+        resumePhase: GamePhase.Respawning,
+        phaseTicks: CONFIG.respawnTicks,
+      },
+      { ...state, phase: GamePhase.Playing, phaseTicks: 1 },
+      { ...state, player: { ...state.player, fireCooldown: enormous } },
+      { ...state, player: { ...state.player, invulnerableTicks: enormous } },
+      { ...state, enemies: state.enemies.map((enemy) => ({ ...enemy, steerCooldown: enormous })) },
+      { ...state, enemies: state.enemies.map((enemy) => ({ ...enemy, fireCooldown: enormous })) },
+    ];
+    for (const value of corrupt) {
+      memory.set(STORAGE_KEYS.run, JSON.stringify(value));
+      expect(loadRun()).toBeNull();
+    }
+  });
+
+  it('round-trips actual core saves and continues the identical random stream', () => {
+    const original = createGame(42);
+    step(original, { ...EMPTY_INPUT, command: Command.Start });
+    for (let tick = 0; tick < 1200; tick += 1) {
+      step(original, { ...chooseDemoInput(original), debugInvulnerable: true });
+      if (tick % 60 !== 0) continue;
+      saveRun(original);
+      const restored = loadRun();
+      expect(restored).not.toBeNull();
+      if (!restored) throw new Error('Valid run was rejected');
+      expect(restored).toEqual({
+        ...original,
+        phase: GamePhase.Paused,
+        resumePhase: original.phase,
+      });
+    }
+    saveRun(original);
+    const restored = loadRun();
+    if (!restored) throw new Error('Valid run was rejected');
+    step(restored, { ...EMPTY_INPUT, command: Command.Continue });
+    for (let tick = 0; tick < 300; tick += 1) {
+      const input = { ...chooseDemoInput(original), debugInvulnerable: true };
+      expect(step(restored, input)).toEqual(step(original, input));
+      expect(restored).toEqual(original);
+    }
+  });
+
   it('saves only resumable phases and clears a run independently', () => {
     const state = fixture();
     for (const phase of [GamePhase.Title, GamePhase.Screensaver, GamePhase.GameOver]) {
@@ -117,6 +171,7 @@ describe('run persistence', () => {
       expect(memory.has(STORAGE_KEYS.run)).toBe(false);
     }
     state.phase = GamePhase.Playing;
+    state.phaseTicks = 0;
     saveRun(state);
     savePreferences({ theme: 'retro', music: false, sfx: true });
     clearRun();
