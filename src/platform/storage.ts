@@ -1,4 +1,10 @@
-import { CONFIG } from '../core/config';
+import {
+  CONFIG,
+  FORMATION_COLUMNS,
+  FORMATION_COUNT,
+  LEGACY_FORMATION_COLUMNS,
+  PLAYER_FIRE_INTERVAL_TICKS,
+} from '../core/config';
 import { EnemyKind, EnemyMode, GamePhase } from '../core/types';
 import type {
   ActivePhase,
@@ -30,7 +36,7 @@ export const STORAGE_KEYS = {
 };
 
 export const DEFAULT_PREFERENCES: Readonly<Preferences> = {
-  theme: 'retro',
+  theme: 'classic',
   music: true,
   sfx: true,
 };
@@ -85,7 +91,7 @@ function parsePlayer(value: unknown): PlayerState | null {
     !isNumber(value.y) ||
     !isDirection(value.direction) ||
     !isCount(value.fireCooldown) ||
-    value.fireCooldown > CONFIG.playerFireInterval ||
+    value.fireCooldown > PLAYER_FIRE_INTERVAL_TICKS ||
     !isCount(value.invulnerableTicks) ||
     value.invulnerableTicks > CONFIG.invulnerabilityTicks
   )
@@ -133,8 +139,6 @@ function parseEnemy(value: unknown): EnemyState | null {
     !isCount(value.diveGroup)
   )
     return null;
-  if (value.row >= CONFIG.rows || value.column >= CONFIG.columns) return null;
-  if (value.row === 0 && (value.column < 2 || value.column > 5)) return null;
   return {
     id: value.id,
     row: value.row,
@@ -207,14 +211,36 @@ function parseRun(value: unknown): GameState | null {
   )
     return null;
   const player = parsePlayer(value.player);
-  const enemies = parsePool(value.enemies, (CONFIG.rows - 1) * CONFIG.columns + 4, parseEnemy);
+  if (!Array.isArray(value.enemies)) return null;
+  const legacyCount = LEGACY_FORMATION_COLUMNS.reduce(
+    (count, columns) => count + columns.length,
+    0,
+  );
+  const legacy = value.enemies.length === legacyCount;
+  if (!legacy && value.enemies.length !== FORMATION_COUNT) return null;
+  const layout = legacy ? LEGACY_FORMATION_COLUMNS : FORMATION_COLUMNS;
+  const enemies = parsePool(value.enemies, legacy ? legacyCount : FORMATION_COUNT, parseEnemy);
   const playerBullets = parsePool(value.playerBullets, CONFIG.playerBulletCount, parseBullet);
   const enemyBullets = parsePool(value.enemyBullets, CONFIG.enemyBulletCount, parseBullet);
   if (!player || !enemies || !playerBullets || !enemyBullets) return null;
   if (
     new Set(enemies.map((enemy) => enemy.id)).size !== enemies.length ||
-    new Set(enemies.map((enemy) => enemy.row * CONFIG.columns + enemy.column)).size !==
-      enemies.length
+    new Set(enemies.map((enemy) => `${enemy.row}:${enemy.column}`)).size !== enemies.length ||
+    enemies.some((enemy) => {
+      if (!layout[enemy.row]?.includes(enemy.column)) return true;
+      if (enemy.id !== enemy.row * (legacy ? 8 : CONFIG.columns) + enemy.column) return true;
+      if (legacy) {
+        const compact =
+          enemy.homeX === 83 + enemy.column * 22 && enemy.homeY === 42 + enemy.row * 15;
+        const original =
+          enemy.homeX === 55 + enemy.column * 30 && enemy.homeY === 42 + enemy.row * 18;
+        return !compact && !original;
+      }
+      return (
+        enemy.homeX !== CONFIG.formationStartX + enemy.column * CONFIG.formationSpacingX ||
+        enemy.homeY !== CONFIG.formationStartY + enemy.row * CONFIG.formationSpacingY
+      );
+    })
   )
     return null;
   return {
@@ -280,7 +306,7 @@ export function loadPreferences(): Preferences {
   const value = read(STORAGE_KEYS.preferences);
   if (
     !isRecord(value) ||
-    (value.theme !== 'retro' && value.theme !== 'modern') ||
+    (value.theme !== 'classic' && value.theme !== 'retro' && value.theme !== 'modern') ||
     typeof value.music !== 'boolean' ||
     typeof value.sfx !== 'boolean'
   )
