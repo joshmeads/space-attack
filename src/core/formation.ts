@@ -1,5 +1,5 @@
-import { CONFIG } from "./config";
-import { EnemyKind, EnemyMode, type EnemyState } from "./types";
+import { CONFIG } from './config';
+import { EnemyKind, EnemyMode, type EnemyState } from './types';
 
 const ROW_KINDS: readonly EnemyKind[] = [
   EnemyKind.Flagship,

@@ -1,4 +1,4 @@
-import type { GameState } from "./types";
+import type { GameState } from './types';
 
 export function nextRandom(state: GameState): number {
   let value = state.rng;

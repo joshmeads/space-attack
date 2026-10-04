@@ -7,7 +7,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:5173/space-attack/',
+    baseURL: 'http://127.0.0.1:5183/space-attack/',
     trace: 'retain-on-failure',
     ...devices['Desktop Chrome'],
     launchOptions: {
@@ -21,7 +21,7 @@ export default defineConfig({
   },
   webServer: {
     command: 'bun run dev',
-    url: 'http://127.0.0.1:5173/space-attack/',
+    url: 'http://127.0.0.1:5183/space-attack/',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
   },

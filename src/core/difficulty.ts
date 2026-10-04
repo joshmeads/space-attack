@@ -1,5 +1,5 @@
-import { CONFIG } from "./config";
-import type { Difficulty } from "./types";
+import { CONFIG } from './config';
+import type { Difficulty } from './types';
 
 const difficulties = new Map<number, Difficulty>();
 

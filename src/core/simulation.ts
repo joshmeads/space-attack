@@ -1,8 +1,8 @@
-import { overlaps } from "./collision";
-import { CONFIG, ROW_SCORES, TRANSITIONS } from "./config";
-import { getDifficulty } from "./difficulty";
-import { createFormation } from "./formation";
-import { nextRandom } from "./random";
+import { overlaps } from './collision';
+import { CONFIG, ROW_SCORES, TRANSITIONS } from './config';
+import { getDifficulty } from './difficulty';
+import { createFormation } from './formation';
+import { nextRandom } from './random';
 import {
   Command,
   EnemyKind,
@@ -15,7 +15,7 @@ import {
   type GameEvent,
   type GameState,
   type InputFrame,
-} from "./types";
+} from './types';
 
 const eventBuffers = new WeakMap<GameState, GameEvent[]>();
 
@@ -74,7 +74,7 @@ function transition(state: GameState, next: GamePhase, events: GameEvent[]): voi
     state.phaseTicks = 0;
   }
   state.phase = next;
-  events.push({ kind: "phase", from, to: next });
+  events.push({ kind: 'phase', from, to: next });
 }
 
 function refillFuel(state: GameState): void {
@@ -117,17 +117,17 @@ function beginNextWave(state: GameState, events: GameEvent[]): void {
   clearBullets(state);
   refillFuel(state);
   transition(state, GamePhase.Playing, events);
-  events.push({ kind: "wave", wave: state.wave });
+  events.push({ kind: 'wave', wave: state.wave });
 }
 
 function damagePlayer(
   state: GameState,
-  cause: "bullet" | "collision" | "fuel",
+  cause: 'bullet' | 'collision' | 'fuel',
   events: GameEvent[],
 ): void {
   state.lives -= 1;
   events.push({
-    kind: "hit",
+    kind: 'hit',
     cause,
     x: state.player.x,
     y: state.player.y,
@@ -145,7 +145,7 @@ function damagePlayer(
 
 function fireBullet(
   bullets: BulletState[],
-  owner: "player" | "enemy",
+  owner: 'player' | 'enemy',
   x: number,
   y: number,
   speed: number,
@@ -158,7 +158,7 @@ function fireBullet(
     bullet.y = y;
     bullet.vx = 0;
     bullet.vy = speed;
-    events.push({ kind: "shot", owner, x, y });
+    events.push({ kind: 'shot', owner, x, y });
     return true;
   }
   return false;
@@ -181,7 +181,7 @@ function launchDive(state: GameState, enemy: EnemyState, group: number, events: 
   enemy.direction = state.player.x < enemy.x ? -1 : 1;
   enemy.steerCooldown = CONFIG.steeringInterval;
   enemy.fireCooldown = getDifficulty(state.wave).enemyFireInterval;
-  events.push({ kind: "dive", enemyId: enemy.id, x: enemy.x, y: enemy.y });
+  events.push({ kind: 'dive', enemyId: enemy.id, x: enemy.x, y: enemy.y });
 }
 
 function scheduleDive(state: GameState, difficulty: Difficulty, events: GameEvent[]): void {
@@ -269,7 +269,7 @@ function moveEnemies(state: GameState, difficulty: Difficulty, events: GameEvent
     if (enemy.fireCooldown <= 0) {
       fireBullet(
         state.enemyBullets,
-        "enemy",
+        'enemy',
         enemy.x,
         enemy.y + CONFIG.enemyHalfHeight + CONFIG.bulletHalfHeight,
         difficulty.enemyBulletSpeed,
@@ -303,7 +303,7 @@ function killEnemy(state: GameState, enemy: EnemyState, events: GameEvent[]): vo
   state.score += points;
   state.hitStopTicks = CONFIG.hitStopTicks;
   events.push({
-    kind: "kill",
+    kind: 'kill',
     enemyId: enemy.id,
     enemyKind: enemy.kind,
     diving,
@@ -314,7 +314,7 @@ function killEnemy(state: GameState, enemy: EnemyState, events: GameEvent[]): vo
   if (!state.bonusLifeAwarded && state.score >= CONFIG.bonusLifeScore) {
     state.bonusLifeAwarded = true;
     state.lives += 1;
-    events.push({ kind: "bonus", lives: state.lives, score: state.score });
+    events.push({ kind: 'bonus', lives: state.lives, score: state.score });
   }
 }
 
@@ -337,7 +337,7 @@ function collidePlayerBullets(state: GameState, events: GameEvent[]): void {
       ) {
         bullet.active = false;
         opposing.active = false;
-        events.push({ kind: "cancel", x: bullet.x, y: bullet.y });
+        events.push({ kind: 'cancel', x: bullet.x, y: bullet.y });
         break;
       }
     }
@@ -380,7 +380,7 @@ function collidePlayer(state: GameState, input: InputFrame, events: GameEvent[])
         CONFIG.bulletHalfHeight,
       )
     ) {
-      damagePlayer(state, "bullet", events);
+      damagePlayer(state, 'bullet', events);
       return;
     }
   }
@@ -398,7 +398,7 @@ function collidePlayer(state: GameState, input: InputFrame, events: GameEvent[])
         CONFIG.enemyHalfHeight,
       )
     ) {
-      damagePlayer(state, "collision", events);
+      damagePlayer(state, 'collision', events);
       return;
     }
   }
@@ -435,7 +435,7 @@ function playTick(state: GameState, input: InputFrame, events: GameEvent[]): voi
     if (
       fireBullet(
         state.playerBullets,
-        "player",
+        'player',
         state.player.x,
         state.player.y - CONFIG.playerHalfHeight - CONFIG.bulletHalfHeight,
         -CONFIG.playerBulletSpeed,
@@ -461,7 +461,7 @@ function playTick(state: GameState, input: InputFrame, events: GameEvent[]): voi
   if (state.fuelTicks >= CONFIG.fuelInterval) {
     state.fuelTicks -= CONFIG.fuelInterval;
     state.fuel = Math.max(0, state.fuel - CONFIG.fuelChunk);
-    if (state.fuel === 0 && !input.debugInvulnerable) damagePlayer(state, "fuel", events);
+    if (state.fuel === 0 && !input.debugInvulnerable) damagePlayer(state, 'fuel', events);
   }
 }
 
@@ -493,7 +493,7 @@ export function step(state: GameState, input: InputFrame): readonly GameEvent[] 
     case GamePhase.Screensaver:
       if (input.command === Command.Start) {
         transition(state, GamePhase.Playing, events);
-        events.push({ kind: "wave", wave: state.wave });
+        events.push({ kind: 'wave', wave: state.wave });
       } else if (input.activity || input.move !== 0 || input.fire) {
         state.phaseTicks = 0;
         if (state.phase === GamePhase.Screensaver) transition(state, GamePhase.Title, events);
