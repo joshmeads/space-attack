@@ -4,28 +4,28 @@
   "checkpoints": [
     {
       "inputTick": 1,
-      "state": "2c9f30b0a24de45bc8e1fb0e268e9005f719669cdacb9f90b0ee10141d68c7bf",
+      "state": "ebc86631b3206024bf6d5a20cbfb730091a9b7d074a328510b5ebc05c67d29d5",
       "events": "2b00f93f95c16595d2eb469f24c1ebea2340692aefce41d2738197221015fae1"
     },
     {
       "inputTick": 600,
-      "state": "0fdb36525d414ea81ed1d3d4f77ded16ff80d4e4c5a941c4479a2a2d06ec9294",
-      "events": "3f448a2c72aaad4c43977742fb550d917916fec905278b11fa27e84185746bb3"
+      "state": "39389472c671a58a59a9242bac57094cf39a3af4b5c49f778dc9b84b177f29d7",
+      "events": "132094eed6d97d59a3f8cad9f2969ab92e9345433d7e81e616ae0e84210c1333"
     },
     {
       "inputTick": 1200,
-      "state": "fe2a09ed573f0c4a56a09f4a958d4ba84a5f3a9cc10869fc52d529b046148764",
-      "events": "457f5d44426ffac8918cf6e1a0ed7a222a1a67ce6a9fc4b390be2c24a44d5c17"
+      "state": "954ef143f71bb923720b5c694b4c3cc2d226d24313ec70b6ff0441560c88a88f",
+      "events": "3b6710277908de35735cae2459c101593edfddc848d3e06933f63277eb8397a0"
     },
     {
       "inputTick": 2400,
-      "state": "314698e022abd44bc5ac1f03456a04edab1b8f9ea0e1adc1688b6246b7b05bba",
-      "events": "71bd04c4a7c49b136e28628edda282cda28535a7b75cc4d9138cb16866a6d13e"
+      "state": "f37f5330397e673d1b6bf5e359c17b5264793f2b5bb12d29ec8ce340dab685fd",
+      "events": "976ef80f3cf91a9fc525d0fbf1ebfef26437559aebe3e07b46bb038370869a56"
     },
     {
       "inputTick": 3600,
-      "state": "2dc415334c6faa79ff879235ad0582e840d0ff53547c010b31732c83658b9fe0",
-      "events": "ac282c48434a6ba86d3e9c3f7366e78a2641697c8447285a94f606418de47d22"
+      "state": "df7204a1f2524e5c6d389bddcc90d4631db4b221157084b8dae88120ef8c5327",
+      "events": "aac40ba809c50b2a18b7afaa7e1405f6cb42c023ff47f92a43bc9edf065f77f8"
     }
   ]
 }
