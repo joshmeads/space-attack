@@ -1,6 +1,8 @@
 import { Application, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js';
 import { AdvancedBloomFilter, GlowFilter } from 'pixi-filters';
 import { CONFIG } from '../../core/config';
+import { getRendererPreference } from '../../render/backend';
+import { HUD_LAYOUT } from '../../render/layout';
 import { EnemyMode, GamePhase } from '../../core/types';
 import type { DeepReadonly, GameState } from '../../core/types';
 import { createVectorShip } from '../../render/modern-ships';
@@ -34,6 +36,7 @@ interface Star {
 }
 
 export async function createModernRenderer(host: HTMLElement): Promise<ThemeRenderer> {
+  const preference = getRendererPreference();
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-label', 'Space Attack neon playfield');
   canvas.style.display = 'block';
@@ -55,7 +58,7 @@ export async function createModernRenderer(host: HTMLElement): Promise<ThemeRend
   await app.init({
     canvas,
     context,
-    preference: 'webgl',
+    preference,
     preferWebGLVersion: 2,
     width: CONFIG.width,
     height: CONFIG.height,
@@ -153,27 +156,48 @@ export async function createModernRenderer(host: HTMLElement): Promise<ThemeRend
     hud.addChild(item);
     return item;
   }
-  label('SCORE', 8, 6, MODERN_PALETTE.muted, 6);
-  const score = label('000000', 8, 15, MODERN_PALETTE.white, 8);
-  const waveCaption = label('WAVE', 160, 6, MODERN_PALETTE.muted, 6);
+  label('SCORE', HUD_LAYOUT.score.x, HUD_LAYOUT.score.labelY, MODERN_PALETTE.muted, 6);
+  const score = label(
+    '000000',
+    HUD_LAYOUT.score.x,
+    HUD_LAYOUT.score.valueY,
+    MODERN_PALETTE.white,
+    8,
+  );
+  const waveCaption = label(
+    'WAVE',
+    HUD_LAYOUT.wave.centerX,
+    HUD_LAYOUT.wave.labelY,
+    MODERN_PALETTE.muted,
+    6,
+  );
   waveCaption.anchor.set(0.5, 0);
-  const wave = label('01', 160, 15, MODERN_PALETTE.cyan, 8);
+  const wave = label('01', HUD_LAYOUT.wave.centerX, HUD_LAYOUT.wave.valueY, MODERN_PALETTE.cyan, 8);
   wave.anchor.set(0.5, 0);
-  label('FUEL', 8, 230, MODERN_PALETTE.muted, 6);
-  label('LIVES', 242, 230, MODERN_PALETTE.muted, 6);
+  label('FUEL', HUD_LAYOUT.fuel.labelX, HUD_LAYOUT.fuel.labelY, MODERN_PALETTE.muted, 6);
+  label('LIVES', HUD_LAYOUT.lives.labelX, HUD_LAYOUT.lives.labelY, MODERN_PALETTE.muted, 6);
   const fuelTrack = new Graphics();
   fuelTrack
-    .roundRect(40, 231, 172, 4, 2)
+    .roundRect(
+      HUD_LAYOUT.fuel.x,
+      HUD_LAYOUT.fuel.y,
+      HUD_LAYOUT.fuel.width,
+      HUD_LAYOUT.fuel.height,
+      2,
+    )
     .fill(MODERN_PALETTE.panel)
     .stroke({ color: MODERN_PALETTE.border, width: 0.4 });
   fuelTrack.moveTo(8, 225).lineTo(312, 225).stroke({ color: MODERN_PALETTE.border, width: 0.4 });
   hud.addChild(fuelTrack);
-  const fuel = sprite(hud, 170, 2, MODERN_PALETTE.mint);
-  fuel.anchor.set(0, 0.5);
-  fuel.position.set(41, 233);
+  const fuel = sprite(hud, HUD_LAYOUT.fuel.width, HUD_LAYOUT.fuel.height, MODERN_PALETTE.mint);
+  fuel.anchor.set(0);
+  fuel.position.set(HUD_LAYOUT.fuel.x, HUD_LAYOUT.fuel.y);
   const lives = Array.from({ length: 4 }, (_, index) => {
     const ship = createVectorShip(MODERN_SHIPS.player, MODERN_PALETTE.cyan);
-    ship.position.set(278 + index * 9, 233);
+    ship.position.set(
+      HUD_LAYOUT.lives.firstX + index * HUD_LAYOUT.lives.spacing,
+      HUD_LAYOUT.lives.y,
+    );
     ship.scale.set(0.48);
     hud.addChild(ship);
     return ship;
@@ -188,6 +212,7 @@ export async function createModernRenderer(host: HTMLElement): Promise<ThemeRend
     MODERN_SHIPS.striker,
     MODERN_SHIPS.drone,
     MODERN_SHIPS.manta,
+    MODERN_SHIPS.raider,
   ];
   const colors = [
     MODERN_ENEMY_COLORS.flagship,
@@ -195,6 +220,7 @@ export async function createModernRenderer(host: HTMLElement): Promise<ThemeRend
     MODERN_ENEMY_COLORS.striker,
     MODERN_ENEMY_COLORS.drone,
     MODERN_ENEMY_COLORS.manta,
+    MODERN_ENEMY_COLORS.raider,
   ];
   const catalogue = designs.map((design, row) =>
     createVectorShip(design, colors[row] ?? MODERN_PALETTE.cyan),
@@ -396,7 +422,8 @@ export async function createModernRenderer(host: HTMLElement): Promise<ThemeRend
         wave.text = String(state.wave).padStart(2, '0');
         lastWave = state.wave;
       }
-      fuel.width = Math.max(0, Math.min(1, state.fuel / CONFIG.fuelCapacity)) * 170;
+      fuel.width =
+        Math.max(0, Math.min(1, state.fuel / CONFIG.fuelCapacity)) * HUD_LAYOUT.fuel.width;
       fuel.tint = state.fuel <= 25 ? MODERN_PALETTE.magenta : MODERN_PALETTE.mint;
       for (let index = 0; index < lives.length; index++) {
         const ship = lives[index];
@@ -452,8 +479,8 @@ export async function createModernRenderer(host: HTMLElement): Promise<ThemeRend
     },
     resize(width, height, pixelRatio) {
       const scale = Math.max(0.1, Math.min(width / CONFIG.width, height / CONFIG.height));
-      const cssWidth = Math.max(1, Math.floor(CONFIG.width * scale));
-      const cssHeight = Math.max(1, Math.floor(CONFIG.height * scale));
+      const cssWidth = CONFIG.width * scale;
+      const cssHeight = CONFIG.height * scale;
       const ratio = Number.isFinite(pixelRatio) ? Math.max(1, pixelRatio) : 1;
       app.renderer.resize(cssWidth, cssHeight, ratio);
       scene.scale.set(cssWidth / CONFIG.width, cssHeight / CONFIG.height);
@@ -476,9 +503,10 @@ export async function createModernRenderer(host: HTMLElement): Promise<ThemeRend
       bloom.destroy();
     },
   };
+  const bounds = host.getBoundingClientRect();
   renderer.resize(
-    host.clientWidth || CONFIG.width,
-    host.clientHeight || CONFIG.height,
+    bounds.width || CONFIG.width,
+    bounds.height || CONFIG.height,
     window.devicePixelRatio,
   );
   return renderer;

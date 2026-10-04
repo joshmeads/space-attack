@@ -9,6 +9,7 @@ export const MODERN_PALETTE = {
   magenta: 0xff739c,
   mint: 0x76edbf,
   amber: 0xffce81,
+  blue: 0x789fff,
   hull: 0x17273e,
   enemyHull: 0x201c39,
   grid: 0x566496,
@@ -20,4 +21,5 @@ export const MODERN_ENEMY_COLORS = {
   striker: MODERN_PALETTE.cyan,
   drone: MODERN_PALETTE.mint,
   manta: MODERN_PALETTE.amber,
+  raider: MODERN_PALETTE.blue,
 } satisfies Record<string, number>;

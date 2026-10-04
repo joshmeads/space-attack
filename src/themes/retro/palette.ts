@@ -10,6 +10,7 @@ export const RETRO_PALETTE = {
   violet: 0xb69aff,
   cyan: 0x67ddeb,
   mint: 0x91e8b0,
+  blue: 0x739dff,
 } satisfies Record<string, number>;
 
 export type PixelPalette = Readonly<Record<string, number>>;
@@ -31,4 +32,5 @@ export const RETRO_ENEMY_PALETTES = {
   striker: { ...SPRITE_PALETTE, P: RETRO_PALETTE.cyan, S: 0x3285ae, H: 0xc5faff },
   drone: { ...SPRITE_PALETTE, P: RETRO_PALETTE.mint, S: 0x448e79, H: 0xd7ffd4 },
   manta: { ...SPRITE_PALETTE, P: RETRO_PALETTE.amber, S: 0xb77543, H: 0xffe9af },
+  raider: { ...SPRITE_PALETTE, P: RETRO_PALETTE.blue, S: 0x3e55a4, H: 0xffa568 },
 } satisfies Record<string, PixelPalette>;

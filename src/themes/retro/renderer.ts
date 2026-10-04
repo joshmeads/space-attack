@@ -1,6 +1,8 @@
 import { Application, Container, Graphics, Rectangle, Sprite, Texture } from 'pixi.js';
 import { CRTFilter } from 'pixi-filters';
 import { CONFIG } from '../../core/config';
+import { getRendererPreference } from '../../render/backend';
+import { HUD_LAYOUT } from '../../render/layout';
 import { EnemyKind, EnemyMode, GamePhase } from '../../core/types';
 import type { DeepReadonly, GameState } from '../../core/types';
 import { createPixelFrames, createPixelTexture, PixelText } from '../../render/pixels';
@@ -44,6 +46,7 @@ function makeSprite(parent: Container, texture = Texture.EMPTY): Sprite {
 }
 
 export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRenderer> {
+  const preference = getRendererPreference();
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-label', 'Space Attack arcade playfield');
   canvas.style.imageRendering = 'pixelated';
@@ -66,7 +69,7 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
   await app.init({
     canvas,
     context,
-    preference: 'webgl',
+    preference,
     preferWebGLVersion: 2,
     width: CONFIG.width,
     height: CONFIG.height,
@@ -121,6 +124,7 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
     [EnemyKind.Drone]: frames(RETRO_SPRITES.drone, RETRO_ENEMY_PALETTES.drone),
   };
   const mantaFrames = frames(RETRO_SPRITES.manta, RETRO_ENEMY_PALETTES.manta);
+  const raiderFrames = frames(RETRO_SPRITES.raider, RETRO_ENEMY_PALETTES.raider);
   const playerBulletTexture = createPixelTexture(RETRO_SPRITES.playerBullet, SPRITE_PALETTE);
   const enemyBulletTexture = createPixelTexture(RETRO_SPRITES.enemyBullet, SPRITE_PALETTE);
   allTextures.push(playerBulletTexture, enemyBulletTexture);
@@ -138,13 +142,18 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
     hud.addChild(item);
     return item;
   }
-  label('SCORE', 8, 7, RETRO_PALETTE.amber);
-  const scoreText = label('000000', 8, 17, RETRO_PALETTE.white);
-  const waveLabel = label('WAVE', 0, 7, RETRO_PALETTE.muted);
-  waveLabel.x = Math.round((CONFIG.width - waveLabel.textWidth) / 2);
-  const waveText = label('01', 0, 17, RETRO_PALETTE.white);
-  label('FUEL', 8, 230, RETRO_PALETTE.muted);
-  label('LIVES', 242, 230, RETRO_PALETTE.muted);
+  label('SCORE', HUD_LAYOUT.score.x, HUD_LAYOUT.score.labelY, RETRO_PALETTE.amber);
+  const scoreText = label(
+    '000000',
+    HUD_LAYOUT.score.x,
+    HUD_LAYOUT.score.valueY,
+    RETRO_PALETTE.white,
+  );
+  const waveLabel = label('WAVE', 0, HUD_LAYOUT.wave.labelY, RETRO_PALETTE.muted);
+  waveLabel.x = Math.round(HUD_LAYOUT.wave.centerX - waveLabel.textWidth / 2);
+  const waveText = label('01', 0, HUD_LAYOUT.wave.valueY, RETRO_PALETTE.white);
+  label('FUEL', HUD_LAYOUT.fuel.labelX, HUD_LAYOUT.fuel.labelY, RETRO_PALETTE.muted);
+  label('LIVES', HUD_LAYOUT.lives.labelX, HUD_LAYOUT.lives.labelY, RETRO_PALETTE.muted);
   const fuel = new Graphics();
   hud.addChild(fuel);
   const separator = new Graphics();
@@ -153,7 +162,10 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
   const lives = Array.from({ length: 4 }, (_, index) => {
     const sprite = makeSprite(hud, playerFrames.center[0]);
     sprite.scale.set(0.5);
-    sprite.position.set(278 + index * 9, 233);
+    sprite.position.set(
+      HUD_LAYOUT.lives.firstX + index * HUD_LAYOUT.lives.spacing,
+      HUD_LAYOUT.lives.y,
+    );
     return sprite;
   });
   const banner = new PixelText(font, FONT_WIDTH);
@@ -289,7 +301,11 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
         sprite.visible = enemy !== undefined && enemy.mode !== EnemyMode.Dead;
         if (!enemy || !sprite.visible) continue;
         sprite.texture =
-          (enemy.row === 4 ? mantaFrames : enemyFrames[enemy.kind])[frame] ?? Texture.EMPTY;
+          (enemy.row === 5
+            ? raiderFrames
+            : enemy.row === 4
+              ? mantaFrames
+              : enemyFrames[enemy.kind])[frame] ?? Texture.EMPTY;
         sprite.position.set(Math.round(enemy.x), Math.round(enemy.y));
         sprite.alpha = 1;
       }
@@ -370,15 +386,20 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
       }
       if (lastWave !== state.wave) {
         waveText.setText(String(state.wave).padStart(2, '0'), RETRO_PALETTE.white);
-        waveText.x = Math.round((CONFIG.width - waveText.textWidth) / 2);
+        waveText.x = Math.round(HUD_LAYOUT.wave.centerX - waveText.textWidth / 2);
         lastWave = state.wave;
       }
       if (lastFuel !== state.fuel) {
-        fuel.clear().rect(42, 231, 170, 4).fill(RETRO_PALETTE.panel);
-        const filled = Math.round((170 * Math.max(0, state.fuel)) / CONFIG.fuelCapacity);
+        fuel
+          .clear()
+          .rect(HUD_LAYOUT.fuel.x, HUD_LAYOUT.fuel.y, HUD_LAYOUT.fuel.width, HUD_LAYOUT.fuel.height)
+          .fill(RETRO_PALETTE.panel);
+        const filled = Math.round(
+          (HUD_LAYOUT.fuel.width * Math.max(0, state.fuel)) / CONFIG.fuelCapacity,
+        );
         if (filled > 0)
           fuel
-            .rect(42, 231, filled, 4)
+            .rect(HUD_LAYOUT.fuel.x, HUD_LAYOUT.fuel.y, filled, HUD_LAYOUT.fuel.height)
             .fill(state.fuel <= 25 ? RETRO_PALETTE.red : RETRO_PALETTE.mint);
         lastFuel = state.fuel;
       }
@@ -443,10 +464,9 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
       app.render();
     },
     resize(width, height, _pixelRatio) {
-      const fit = Math.max(0.1, Math.min(width / CONFIG.width, height / CONFIG.height));
-      const scale = fit >= 1 ? Math.floor(fit) : fit;
-      canvas.style.width = `${Math.floor(CONFIG.width * scale)}px`;
-      canvas.style.height = `${Math.floor(CONFIG.height * scale)}px`;
+      const scale = Math.max(0.1, Math.min(width / CONFIG.width, height / CONFIG.height));
+      canvas.style.width = `${CONFIG.width * scale}px`;
+      canvas.style.height = `${CONFIG.height * scale}px`;
       canvas.dataset.logicalWidth = String(CONFIG.width);
       canvas.dataset.logicalHeight = String(CONFIG.height);
       canvas.dataset.scale = String(scale);
@@ -457,6 +477,7 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
       for (const texture of allTextures) texture.destroy(true);
     },
   };
-  renderer.resize(host.clientWidth || CONFIG.width, host.clientHeight || CONFIG.height, 1);
+  const bounds = host.getBoundingClientRect();
+  renderer.resize(bounds.width || CONFIG.width, bounds.height || CONFIG.height, 1);
   return renderer;
 }
