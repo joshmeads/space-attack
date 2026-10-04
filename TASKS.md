@@ -14,16 +14,19 @@ Active tier: **Tier 3**. Advance to Tier 2 only after the Tier 1 build is deploy
 - [x] Add silent title demo and screensaver.
 - [x] Verify Tier 2 on integration and main.
 - [x] Add deterministic benchmark and Modern theme after preceding tiers passed.
-- [ ] Complete final QA, README and decision record.
+- [x] Complete final QA, README and decision record.
 
 The scope now includes the user's later Classic default and shared bare layout request.
 
 - [x] Add Classic as the default third theme with original generated art and audio.
-- [ ] Remove all surrounding cabinet/header/footer/control-caption chrome.
-- [ ] Share the same 41-enemy pyramid, playfield and HUD geometry across every theme.
+- [x] Remove all surrounding cabinet/header/footer/control-caption chrome.
+- [x] Share the same 41-enemy pyramid, playfield and HUD geometry across every theme.
 - [x] Preserve valid legacy saved formations through hydration and theme changes.
-- [ ] Verify the updated replay baseline, three-wave progression, theme continuity and bare desktop/mobile layout.
+- [x] Verify the updated replay baseline, three-wave progression, theme continuity and bare desktop/mobile layout.
 
-- [ ] Verify identical maximum fitted 4:3 bounds across Classic, Retro and Modern.
-- [ ] Verify generated pause labels, aligned M/N hints and R restart.
-- [ ] Publish the final verified build to Codex Sites and retain GitHub Pages.
+- [x] Verify identical maximum fitted 4:3 bounds across Classic, Retro and Modern.
+- [x] Verify generated pause labels, aligned M/N hints and R restart.
+- [x] Publish the verified build to Codex Sites.
+- [ ] Publish the final main checkpoint to both hosts and confirm Pages CI/live behavior.
+
+Combined integration: 52 unit tests and six browser tests pass. Sites publication succeeded for source 24246a3. The production audit passed with zero console messages, warnings or errors. Final main publication remains open.
