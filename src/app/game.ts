@@ -46,7 +46,9 @@ export async function bootGame(host: HTMLElement): Promise<void> {
   const requestedSeed = Number(query.get('seed') ?? '1982');
   const seed = Number.isFinite(requestedSeed) ? requestedSeed >>> 0 : 1982;
   const preferences = loadPreferences();
-  const initialTheme = query.get('theme') === 'modern' ? 'modern' : preferences.theme;
+  const queryTheme = query.get('theme');
+  const initialTheme =
+    queryTheme === 'retro' || queryTheme === 'modern' ? queryTheme : preferences.theme;
   preferences.theme = 'retro';
   let desiredTheme: ThemeId = initialTheme;
   let scores = loadScores();
@@ -158,9 +160,11 @@ export async function bootGame(host: HTMLElement): Promise<void> {
   }
   const resize = () => {
     for (const cached of renderers.values())
-      void cached.then((themeRenderer) =>
-        themeRenderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio),
-      );
+      void cached
+        .then((themeRenderer) =>
+          themeRenderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio),
+        )
+        .catch(() => {});
     renderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio);
     const canvas = surfaces.get(preferences.theme)?.querySelector('canvas');
     if (canvas) {
