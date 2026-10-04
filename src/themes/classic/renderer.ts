@@ -456,10 +456,9 @@ export async function createClassicRenderer(host: HTMLElement): Promise<ThemeRen
       app.render();
     },
     resize(width, height, _pixelRatio) {
-      const fit = Math.max(0.1, Math.min(width / CONFIG.width, height / CONFIG.height));
-      const scale = fit >= 1 ? Math.floor(fit) : fit;
-      canvas.style.width = `${Math.floor(CONFIG.width * scale)}px`;
-      canvas.style.height = `${Math.floor(CONFIG.height * scale)}px`;
+      const scale = Math.max(0.1, Math.min(width / CONFIG.width, height / CONFIG.height));
+      canvas.style.width = `${CONFIG.width * scale}px`;
+      canvas.style.height = `${CONFIG.height * scale}px`;
       canvas.dataset.theme = 'classic';
       canvas.dataset.logicalWidth = String(CONFIG.width);
       canvas.dataset.logicalHeight = String(CONFIG.height);
@@ -470,6 +469,7 @@ export async function createClassicRenderer(host: HTMLElement): Promise<ThemeRen
       for (const texture of allTextures) texture.destroy(true);
     },
   };
-  renderer.resize(host.clientWidth || CONFIG.width, host.clientHeight || CONFIG.height, 1);
+  const bounds = host.getBoundingClientRect();
+  renderer.resize(bounds.width || CONFIG.width, bounds.height || CONFIG.height, 1);
   return renderer;
 }
