@@ -1,6 +1,6 @@
 import type { DeepReadonly, GameEvent, GameState } from '../core/types';
 
-export type ThemeId = 'retro' | 'modern';
+export type ThemeId = 'classic' | 'retro' | 'modern';
 
 export interface RenderOptions {
   reducedMotion: boolean;

@@ -17,7 +17,7 @@
 
 ## Tier gates
 
-- Tier 1 is active. Acceptance requires retro gameplay, keyboard input, accurate HUD, progression, screens, CI and a working GitHub Pages deployment.
+- Tier 1 acceptance requires retro gameplay, keyboard input, accurate HUD, progression, screens, CI and a working GitHub Pages deployment.
 - Tier 2 begins after Tier 1 acceptance. Its gate covers saves, touch, audio, high scores, visual feedback and the title demo.
 - Tier 3 begins after Tier 2 acceptance. Its gate covers benchmark reporting and the modern theme without regressions in earlier tiers.
 
@@ -55,3 +55,17 @@ Chromium browser QA verified the actual WebGL 2 context, keyboard movement and f
 GitHub Actions run 37184689147 completed validation and deployment successfully. An independent public-site playtest confirmed HTTP 200 for the page and all nine assets, a real WebGL 2 context, keyboard play, 290 points from eight kills, enemy dives, three lives and no browser errors. The live URL is https://joshmeads.github.io/space-attack/. Tier 1 is accepted and Tier 2 is now active.
 
 The requested tighter formation is approved at startX 83, horizontal spacing 22 and vertical spacing 15, retaining startY 42. Eight columns remain centered at x=160 and safely inside both edges throughout drift. The fuel strip will be continuous while core fuel still drains in chunks. This intentional gameplay geometry change requires reviewing and replacing the replay baseline. The public before image is retained outside the repository at /tmp/space-attack-playtest-live-before-playing.png.
+
+## Classic default and common layout
+
+The user expanded the scope to three themes and selected Classic as the default. This supersedes the original two-theme limit. The surrounding cabinet, header, footer and control captions will be removed for all themes; menus remain inside the bare 4:3 game.
+
+Reference Photo 2 shows a complete pyramid of 41 enemies: 2 yellow flagships, 5 red enemies, 7 green enemies, then three rows of 9 red enemies. Every theme will use the same core slot layout, centered at x=160 with 18-pixel column spacing and 11-pixel row spacing. New art remains original and generated from source.
+
+Legacy version-1 saves keep their existing 36-slot formation and positions until the next wave. Hydration accepts either complete slot layout, rather than changing collision positions during loading or theme switching. New preferences default to Classic; explicitly saved Retro or Modern choices remain valid.
+
+## Player firing cadence
+
+The user requested evenly spaced fire derived from the maximum of two active player shots. A shot starts at y=205.5 and leaves strictly below y=-3 at 4.5 pixels per simulation tick. The minimum exit tick is floor(208.5 / 4.5) + 1 = 47. Dividing that lifetime between two slots gives ceil(47 / 2) = 24 ticks, or 400 ms at 60 Hz. Hits and bullet cancellations free slots without bypassing that cooldown. This intentionally changes the replay baseline; presentation size and theme have no effect on cadence.
+
+The user then requested an editable 400 ms setting. `CONFIG.playerFireIntervalMs` is authoritative; `PLAYER_FIRE_INTERVAL_TICKS = ceil(ms * tickRate / 1000)` derives the 24-tick default. This retains the approved default spacing while keeping tuning in one value. The user also removed all slogans and decorative wording; remaining copy identifies game state, controls or actions.
