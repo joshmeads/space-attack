@@ -29,7 +29,7 @@ Generated audio loads after the first keyboard or touch gesture. Music and effec
 
 ## Modes
 
-Append these query parameters to either game URL. Autonomous modes never save a player run.
+Open [demo mode](https://space-attack.secretmoose.chatgpt.site/?demo=1&seed=123), [benchmark mode](https://space-attack.secretmoose.chatgpt.site/?benchmark=1&seed=123), or [debug mode](https://space-attack.secretmoose.chatgpt.site/?debug=1&seed=123). You can also append these parameters to the Pages or local dev URL. Remove them to return to normal play.
 
 | Query                                             | Behavior                                                  |
 | ------------------------------------------------- | --------------------------------------------------------- |
@@ -39,7 +39,17 @@ Append these query parameters to either game URL. Autonomous modes never save a 
 | `?debug=1`                                        | Hitboxes, FPS, I for invulnerability and K to skip a wave |
 | `?theme=classic`, `?theme=retro`, `?theme=modern` | Select the initial theme                                  |
 
-Benchmark reports average, p50/p95/p99 and maximum frame intervals, estimated dropped frames, seed, theme, render resolution, pixel ratio, wave and tick. Inspect `window.__SPACE_ATTACK_BENCHMARK__.snapshot()`. Frame timing depends on the browser; the seeded simulation is deterministic.
+Demo plays automatically, restarts after game over and stays silent. Benchmark uses the same independent AI simulation and shows a timing overlay. Neither mode changes your saved run, preferences or high scores. Keep the tab visible while measuring.
+
+Use the same seed, theme and window size when comparing benchmark runs, for example `?benchmark=1&seed=123&theme=retro`. The default seed is `1982`; a seed reproduces simulation decisions, while browser frame timing varies. A loaded save retains its own RNG state until you start a new game. Explicit `theme` parameters take precedence over the saved theme.
+
+Benchmark reports average, p50/p95/p99 and maximum frame intervals, estimated dropped frames, seed, theme, render resolution, pixel ratio, wave and tick. After letting it run, inspect this object in the browser developer console:
+
+```js
+window.__SPACE_ATTACK_BENCHMARK__.snapshot();
+```
+
+Debug mode adds hitboxes and FPS. Start a game with Enter, press I to toggle invulnerability, and press K to skip a wave. These controls apply to the player run. The debug API also exposes `window.__SPACE_ATTACK__.snapshot()` for inspecting state.
 
 ## Develop
 
@@ -60,6 +70,18 @@ bun run test:e2e
 bun run build
 bun run build:sites
 ```
+
+Bun and `bun.lock` are the tested default and remain the CI package manager. Other evaluators can use npm, pnpm or Yarn instead. npm is verified on Node 26:
+
+```sh
+npm install --no-package-lock
+npm run dev
+npm run check
+npm run test
+npm run build
+```
+
+pnpm and Yarn provide equivalent `run dev`, `run check`, `run test` and `run build` commands. Their installs are unverified here: translate the Vite/Vitest overrides into pnpm workspace overrides or Yarn resolutions, and adjust the Bun `packageManager` pin in your local copy if your manager enforces it. Follow [Vite Plus package-manager setup](https://viteplus.dev/guide/local-cli). Keep any alternate lockfile local when evaluating.
 
 Vite Plus 1.0 handles development, builds, formatting, linting, type checks and unit tests. The normal build keeps `/space-attack/` for GitHub Pages; `build:sites` uses `/` for Codex Sites. GitHub Actions validates pull requests and main, then deploys passing main builds to the Pages mirror. Codex Sites publication uses the registered project in `.openai/hosting.json`.
 

@@ -1,6 +1,6 @@
 # Space Attack tasks
 
-Active tier: **Tier 3**. Advance to Tier 2 only after the Tier 1 build is deployed and CI passes. Advance to Tier 3 only after Tier 2 verification passes. The overall goal stays active until all requested tiers are delivered or a concrete external blocker is reported.
+All three tiers and the expanded Classic scope are accepted. Each tier passed its required checks before the next was enabled.
 
 - [x] Establish shared contracts and module ownership in PLAN.md.
 - [x] Set up Bun, Vite Plus, Pixi, Playwright and simple CI.
@@ -27,6 +27,6 @@ The scope now includes the user's later Classic default and shared bare layout r
 - [x] Verify identical maximum fitted 4:3 bounds across Classic, Retro and Modern.
 - [x] Verify generated pause labels, aligned M/N hints and R restart.
 - [x] Publish the verified build to Codex Sites.
-- [ ] Publish the final main checkpoint to both hosts and confirm Pages CI/live behavior.
+- [x] Publish the verified game on both hosts and confirm Pages CI/live behavior.
 
-Combined integration: 52 unit tests and six browser tests pass. Sites publication succeeded for source 24246a3. The production audit passed with zero console messages, warnings or errors. Final main publication remains open.
+Combined integration: 52 unit tests and six browser tests pass. Sites publication succeeded for source 24246a3. The production audit passed with zero console messages, warnings or errors. Final main CI 37187754244 and public Pages verification passed at 6472e8b. Sites source 24246a3 and Pages source 6472e8b contain identical application code; subsequent README and verification-record edits do not change the delivered game.
