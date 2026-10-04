@@ -19,3 +19,12 @@
 - No Tone or ZZFX module request occurred before input; both modules loaded after the first keyboard gesture. This verifies loading order in Chromium, not physical iOS audio playback.
 - A populated mobile game-over screen initially overflowed its display. App commit d61b966 reduced the menu to 228 pixels within the 259.5-pixel display. Independent screenshots confirmed the title, playfield, five scores, initials form, and Play Again button fit.
 - A real 90-point run ended through neutral-input simulation; entering XYZ saved the result first in the local top five and removed the saved run. No page exceptions occurred.
+
+## Tier 2 integration gate
+
+- Root integration at 8f6eed0 passed all three browser tests in 11.1 seconds with isolated output. The tighter formation and solid fuel strip were visually inspected on desktop and mobile without replacing the earlier screenshots.
+- The integrated mobile leaderboard and initials form fit within the display. A real 50-point score saved under XYZ and the finished run was removed. Audio imports remained deferred until the first gesture. No browser exceptions occurred.
+
+## WebKit limit
+
+- Playwright downloaded WebKit 26.6, build 2359, using its Ubuntu 24.04 fallback because Arch is unsupported. Host validation then reported missing libicu74, libxml2, and libflite1. No system libraries were installed or replaced. WebKit touch, audio unlock, and save recovery remain unverified on this host; Chromium evidence does not establish physical iOS playback.
