@@ -42,7 +42,7 @@ test('resume preserves the run and preferences while demo stays separate', async
   await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Paused);
 });
 
-test('touch controls and the full cabinet fit on a narrow mobile screen', async ({
+test('touch controls and the playfield fit on a narrow mobile screen', async ({
   browser,
   baseURL,
 }, testInfo) => {
@@ -58,6 +58,10 @@ test('touch controls and the full cabinet fit on a narrow mobile screen', async 
   await page.waitForFunction('Boolean(window.__SPACE_ATTACK__)');
   await page.getByRole('button', { name: /new game/i }).tap();
   await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Playing);
+  const field = await page.locator('canvas:visible').boundingBox();
+  if (!field) throw new Error('The mobile playfield has no rendered bounds');
+  expect(field.width).toBe(390);
+  expect(field.height).toBeCloseTo(292.5, 1);
   const left = page.getByRole('button', { name: 'Move left', exact: true });
   const fire = page.getByRole('button', { name: 'Fire', exact: true });
   const pause = page.getByRole('button', { name: 'Pause', exact: true });
@@ -79,4 +83,28 @@ test('touch controls and the full cabinet fit on a narrow mobile screen', async 
   );
   await page.screenshot({ path: testInfo.outputPath('mobile-pause.png') });
   await context.close();
+});
+
+test('a corrupt saved life count falls back to title without crashing the HUD', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('?debug=1&seed=1982');
+  await page.waitForFunction('Boolean(window.__SPACE_ATTACK__)');
+  await page.keyboard.press('Enter');
+  await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Playing);
+  await page.keyboard.press('p');
+  await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Paused);
+  const saved = await snapshot(page);
+  await page.addInitScript(
+    ({ key, run }) =>
+      localStorage.setItem(key, JSON.stringify({ ...run, lives: Number.MAX_SAFE_INTEGER })),
+    { key: runKey, run: saved },
+  );
+  await page.reload();
+  await page.waitForFunction('Boolean(window.__SPACE_ATTACK__)');
+  await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Title);
+  await expect(page.getByRole('button', { name: 'NEW GAME', exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
 });

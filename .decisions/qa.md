@@ -28,3 +28,7 @@
 ## WebKit limit
 
 - Playwright downloaded WebKit 26.6, build 2359, using its Ubuntu 24.04 fallback because Arch is unsupported. Host validation then reported missing libicu74, libxml2, and libflite1. No system libraries were installed or replaced. WebKit touch, audio unlock, and save recovery remain unverified on this host; Chromium evidence does not establish physical iOS playback.
+
+## Natural play after formation tuning
+
+- The approved tighter formation changed the earlier replay timings. A fresh seed-1982 AI run against current integration cleared 108 enemies without debug input or state mutation. Wave two began at tick 2029 with 1760 points, wave three at tick 4834 with 3390, and wave four at tick 8291 with 5270 and two lives. Neutral input after wave four produced game over at tick 8984, zero lives, and four total hits including the earned bonus life. These figures supersede the earlier formation's playthrough evidence.
