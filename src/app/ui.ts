@@ -45,6 +45,7 @@ export class GameUI {
     sfx: boolean,
     hasSave: boolean,
     modernAvailable: boolean,
+    audioAvailable = false,
   ): void {
     this.score.textContent = String(state.score).padStart(6, '0');
     this.best.textContent = String(Math.max(previousBest, state.score)).padStart(6, '0');
@@ -66,7 +67,7 @@ export class GameUI {
         this.overlay.innerHTML = `<div class="menu title-menu"><div class="eyebrow">YOUR NEXT HIGH SCORE STARTS HERE</div><h1><span>SPACE</span><span>ATTACK<span class="title-star">✦</span></span></h1><p class="tagline">BREAK THE FORMATION. OWN THE SKY.</p><div class="menu-actions"><button class="primary-button" data-action="start">${hasSave ? 'CONTINUE FLIGHT' : 'NEW GAME'} <span>↗</span></button>${hasSave ? '<button class="secondary-button" data-action="title">NEW GAME</button>' : ''}</div><div class="menu-controls"><span><b>← →</b> MOVE</span><span><b>SPACE</b> FIRE</span><span><b>ENTER</b> START</span></div><div class="menu-footnote">3 SHIPS · BONUS SHIP AT 5,000 · ENDLESS WAVES</div></div>`;
         break;
       case GamePhase.Paused:
-        this.overlay.innerHTML = `<div class="menu pause-menu"><div class="eyebrow">FLIGHT ON HOLD</div><h2>PAUSED<span class="title-star">Ⅱ</span></h2><p class="tagline">TAKE A BREATH. THE SKY CAN WAIT.</p><div class="menu-actions"><button class="primary-button" data-action="start">CONTINUE <span>↗</span></button><button class="secondary-button" data-action="title">NEW GAME</button></div><div class="settings"><button data-action="music">MUSIC <strong>${music ? 'ON' : 'OFF'}</strong><kbd>M</kbd></button><button data-action="sfx">SOUND FX <strong>${sfx ? 'ON' : 'OFF'}</strong><kbd>N</kbd></button>${modernAvailable ? '<button data-action="theme">THEME <strong>SWITCH</strong><kbd>T</kbd></button>' : ''}</div><div class="menu-footnote">ENTER TO CONTINUE · P / ESC TO RESUME</div></div>`;
+        this.overlay.innerHTML = `<div class="menu pause-menu"><div class="eyebrow">FLIGHT ON HOLD</div><h2>PAUSED<span class="title-star">Ⅱ</span></h2><p class="tagline">TAKE A BREATH. THE SKY CAN WAIT.</p><div class="menu-actions"><button class="primary-button" data-action="start">CONTINUE <span>↗</span></button><button class="secondary-button" data-action="title">NEW GAME</button></div>${audioAvailable ? `<div class="settings"><button data-action="music">MUSIC <strong>${music ? 'ON' : 'OFF'}</strong><kbd>M</kbd></button><button data-action="sfx">SOUND FX <strong>${sfx ? 'ON' : 'OFF'}</strong><kbd>N</kbd></button>${modernAvailable ? '<button data-action="theme">THEME <strong>SWITCH</strong><kbd>T</kbd></button>' : ''}</div>` : ''}<div class="menu-footnote">ENTER TO CONTINUE · P / ESC TO RESUME</div></div>`;
         break;
       case GamePhase.WaveClear:
         this.overlay.innerHTML = `<div class="wave-banner"><div class="eyebrow">FORMATION DESTROYED</div><h2>WAVE ${String(state.wave).padStart(2, '0')} CLEAR</h2><p>REFUELING · NEXT WAVE INBOUND</p></div>`;
