@@ -15,12 +15,16 @@ test('theme changes preserve a paused run and benchmark leaves its save intact',
     .poll(() => page.evaluate<string>('window.__SPACE_ATTACK__.snapshot().phase'))
     .toBe(GamePhase.Paused);
   const paused = await page.evaluate<GameState>('window.__SPACE_ATTACK__.snapshot()');
-  for (const theme of ['MODERN', 'RETRO', 'MODERN']) {
-    await page.keyboard.press('t');
-    await expect(page.getByRole('button', { name: new RegExp(`THEME ${theme}`) })).toBeVisible();
+  const initialBounds = await page.locator('canvas:visible').boundingBox();
+  for (const theme of ['RETRO', 'MODERN', 'CLASSIC']) {
+    const picker = page.getByRole('button', { name: theme, exact: true });
+    await picker.focus();
+    await page.keyboard.press('Enter');
+    await expect(picker).toHaveAttribute('aria-pressed', 'true');
     expect(await page.evaluate<GameState>('window.__SPACE_ATTACK__.snapshot()')).toEqual(paused);
+    expect(await page.locator('canvas:visible').boundingBox()).toEqual(initialBounds);
   }
-  await expect(page.locator('canvas')).toHaveCount(2);
+  await expect(page.locator('canvas')).toHaveCount(3);
   const saved = await page.evaluate(() => localStorage.getItem('space-attack.run.v1'));
   await page.goto('?benchmark=1&seed=78&theme=modern');
   await page.waitForFunction('window.__SPACE_ATTACK_BENCHMARK__?.snapshot().sampleCount >= 30');

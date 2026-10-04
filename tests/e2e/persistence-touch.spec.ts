@@ -42,7 +42,7 @@ test('resume preserves the run and preferences while demo stays separate', async
   await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Paused);
 });
 
-test('touch controls and the full cabinet fit on a narrow mobile screen', async ({
+test('touch controls and the playfield fit on a narrow mobile screen', async ({
   browser,
   baseURL,
 }, testInfo) => {
