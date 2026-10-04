@@ -6,7 +6,7 @@ export default defineConfig({
   preview: { host: '0.0.0.0', port: 5173, strictPort: true },
   build: { target: 'es2022' },
   test: {
-    include: ['src/core/**/*.test.ts', 'tests/core/**/*.test.ts', 'tests/unit/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'tests/core/**/*.test.ts', 'tests/unit/**/*.test.ts'],
   },
   lint: {
     ignorePatterns: ['dist/**', 'playwright-report/**', 'test-results/**'],

@@ -12,7 +12,7 @@ export interface ThemeRenderer {
   readonly id: ThemeId;
   render(
     state: DeepReadonly<GameState>,
-    events: readonly GameEvent[],
+    events: readonly DeepReadonly<GameEvent>[],
     alpha: number,
     options: RenderOptions,
   ): void;
