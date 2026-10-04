@@ -1,0 +1,4 @@
+- The desktop playfield is 320 by 240, shown in a 4:3 cabinet. The canvas chooses integer pixel scaling; the menus use generated text in the browser's monospace font with no font files.
+- Tier 1 contains keyboard controls, deterministic fixed ticks, menus, responsive layout, auto-pause and explicit debug inputs. Touch button markup is included but secondary features remain gated until the first deployment.
+- The core owns all gameplay transitions. New game constructs a new state object; the app only sends commands to existing simulation state.
+- Debug mode exposes cloned snapshots and neutral deterministic tick advancement. QA can reach natural fuel exhaustion and game over without mutating gameplay fields.

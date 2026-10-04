@@ -1,5 +1,5 @@
-const app = document.querySelector<HTMLDivElement>('#app');
+import { bootGame } from './app/game';
+import './style.css';
 
-if (app) {
-  app.innerHTML = '<main><h1>Space Attack</h1><p>Original arcade formation shooter.</p></main>';
-}
+const host = document.querySelector<HTMLElement>('#app');
+if (host) void bootGame(host);
