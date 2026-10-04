@@ -183,6 +183,7 @@ function parseRun(value: unknown): GameState | null {
     !isCount(value.score) ||
     !isCount(value.lives) ||
     value.lives < 1 ||
+    value.lives > CONFIG.startingLives + 1 ||
     typeof value.bonusLifeAwarded !== 'boolean' ||
     !isNumber(value.fuel) ||
     value.fuel < 0 ||

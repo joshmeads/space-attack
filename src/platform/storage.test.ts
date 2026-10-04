@@ -92,6 +92,8 @@ describe('run persistence', () => {
     const corrupt: unknown[] = [
       null,
       { ...state, rng: -1 },
+      { ...state, lives: CONFIG.startingLives + 2 },
+      { ...state, lives: Number.MAX_SAFE_INTEGER },
       { ...state, wave: 0 },
       { ...state, phase: 'unknown' },
       { ...state, resumePhase: GamePhase.Title },
