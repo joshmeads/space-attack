@@ -1,4 +1,4 @@
-import { CONFIG } from './config';
+import { CONFIG, FORMATION_COLUMNS } from './config';
 import { EnemyKind, EnemyMode, type EnemyState } from './types';
 
 const ROW_KINDS: readonly EnemyKind[] = [
@@ -7,13 +7,13 @@ const ROW_KINDS: readonly EnemyKind[] = [
   EnemyKind.Striker,
   EnemyKind.Drone,
   EnemyKind.Drone,
+  EnemyKind.Drone,
 ];
 
 export function createFormation(): EnemyState[] {
   const enemies: EnemyState[] = [];
   for (let row = 0; row < CONFIG.rows; row += 1) {
-    for (let column = 0; column < CONFIG.columns; column += 1) {
-      if (row === 0 && (column < 2 || column > 5)) continue;
+    for (const column of FORMATION_COLUMNS[row] ?? []) {
       const x = CONFIG.formationStartX + column * CONFIG.formationSpacingX;
       const y = CONFIG.formationStartY + row * CONFIG.formationSpacingY;
       enemies.push({

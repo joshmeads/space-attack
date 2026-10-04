@@ -2,9 +2,9 @@ export interface MusicScore {
   readonly name: string;
   readonly bpm: number;
   readonly lead: readonly (number | null)[];
-  readonly bass: readonly number[];
+  readonly bass: readonly (number | null)[];
   readonly leadWave: 'square' | 'sawtooth';
-  readonly bassWave: 'triangle' | 'sawtooth';
+  readonly bassWave: 'square' | 'triangle' | 'sawtooth';
   readonly leadVolume: number;
   readonly bassVolume: number;
   readonly drumVolume: number;

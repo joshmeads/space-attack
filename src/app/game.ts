@@ -19,9 +19,28 @@ import {
   saveRun,
 } from '../platform/storage';
 import { createRetroRenderer } from '../themes/retro/renderer';
-import type { ThemeRenderer } from '../themes/types';
+import type { ThemeId, ThemeRenderer } from '../themes/types';
 import { InputController, type MenuAction } from './input';
 import { GameUI } from './ui';
+import { createBenchmark, type BenchmarkSnapshot } from './benchmark';
+
+const THEME_ORDER: readonly ThemeId[] = ['classic', 'retro', 'modern'];
+const THEME_ACTIONS: Partial<Record<MenuAction, ThemeId>> = {
+  'theme-classic': 'classic',
+  'theme-retro': 'retro',
+  'theme-modern': 'modern',
+};
+const RENDERER_FACTORIES: Record<ThemeId, (host: HTMLElement) => Promise<ThemeRenderer>> = {
+  classic: async (host) => {
+    const { createClassicRenderer } = await import('../themes/classic/renderer');
+    return createClassicRenderer(host);
+  },
+  retro: createRetroRenderer,
+  modern: async (host) => {
+    const { createModernRenderer } = await import('../themes/modern/renderer');
+    return createModernRenderer(host);
+  },
+};
 
 interface DebugAPI {
   snapshot(): DeepReadonly<GameState>;
@@ -33,17 +52,25 @@ interface DebugAPI {
 declare global {
   interface Window {
     __SPACE_ATTACK__?: DebugAPI;
+    __SPACE_ATTACK_BENCHMARK__?: { snapshot(): BenchmarkSnapshot };
   }
 }
 
 export async function bootGame(host: HTMLElement): Promise<void> {
   const query = new URLSearchParams(location.search);
   const debug = query.get('debug') === '1';
-  const autonomous = query.get('demo') === '1';
+  const benchmarkEnabled = query.get('benchmark') === '1';
+  const autonomous = query.get('demo') === '1' || benchmarkEnabled;
   const requestedSeed = Number(query.get('seed') ?? '1982');
   const seed = Number.isFinite(requestedSeed) ? requestedSeed >>> 0 : 1982;
   const preferences = loadPreferences();
-  preferences.theme = 'retro';
+  const queryTheme = query.get('theme');
+  const initialTheme =
+    queryTheme === 'classic' || queryTheme === 'retro' || queryTheme === 'modern'
+      ? queryTheme
+      : preferences.theme;
+  preferences.theme = initialTheme;
+  let desiredTheme: ThemeId = initialTheme;
   let scores = loadScores();
   let previousBest = scores[0]?.score ?? 0;
   let state = (!autonomous && loadRun()) || createGame(seed);
@@ -57,6 +84,9 @@ export async function bootGame(host: HTMLElement): Promise<void> {
   let scoreSubmitted = false;
   let lastPeriodicSave = 0;
   let idleSavePending = false;
+  const benchmark = benchmarkEnabled ? createBenchmark(seed) : null;
+  const surfaces = new Map<ThemeId, HTMLElement>();
+  const renderers = new Map<ThemeId, Promise<ThemeRenderer>>();
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const audio = new AudioController();
   let renderer: ThemeRenderer;
@@ -75,6 +105,26 @@ export async function bootGame(host: HTMLElement): Promise<void> {
   };
   const action = (requested: MenuAction) => {
     unlock();
+    if (debug && !autonomous && requested === 'invulnerable') {
+      invulnerable = !invulnerable;
+      return;
+    }
+    if (debug && !autonomous && requested === 'skipwave') {
+      skipWave = true;
+      return;
+    }
+    const selectedTheme = THEME_ACTIONS[requested];
+    if (selectedTheme) {
+      desiredTheme = selectedTheme;
+      void selectTheme(selectedTheme);
+      return;
+    }
+    if (requested === 'theme') {
+      desiredTheme =
+        THEME_ORDER[(THEME_ORDER.indexOf(desiredTheme) + 1) % THEME_ORDER.length] ?? 'classic';
+      void selectTheme(desiredTheme);
+      return;
+    }
     if (requested === 'music' || requested === 'sfx') {
       if (requested === 'music') preferences.music = !preferences.music;
       else preferences.sfx = !preferences.sfx;
@@ -91,6 +141,7 @@ export async function bootGame(host: HTMLElement): Promise<void> {
       else if (state.phase === GamePhase.GameOver) newGame();
     }
     if (requested === 'title') newGame();
+    if (requested === 'restart' && state.phase === GamePhase.Paused) newGame();
     if (requested === 'pause') {
       if (state.phase === GamePhase.Paused) pendingCommand = Command.Continue;
       else if (isActive(state)) pendingCommand = Command.Pause;
@@ -114,8 +165,21 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     frameEvents = [];
     ui.refresh();
   }
+  const makeSurface = (theme: ThemeId) => {
+    const surface = document.createElement('div');
+    surface.className = 'theme-surface';
+    surface.dataset.theme = theme;
+    surface.style.display = 'none';
+    ui.stage.append(surface);
+    surfaces.set(theme, surface);
+    return surface;
+  };
   try {
-    renderer = await createRetroRenderer(ui.stage);
+    const initialPromise = RENDERER_FACTORIES[initialTheme](makeSurface(initialTheme));
+    renderers.set(initialTheme, initialPromise);
+    renderer = await initialPromise;
+    const surface = surfaces.get(initialTheme);
+    if (surface) surface.style.display = 'flex';
   } catch {
     ui.error(
       'Space Attack needs WebGL 2. Enable hardware acceleration or try a supported browser.',
@@ -123,20 +187,68 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     return;
   }
   const resize = () => {
-    renderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio);
-    const canvas = ui.stage.querySelector('canvas');
+    const display = ui.stage.parentElement;
+    const controls = host.querySelector<HTMLElement>('.touch-controls');
+    const controlsHeight = controls?.getBoundingClientRect().height ?? 0;
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const fit = Math.min(
+      viewportWidth / CONFIG.width,
+      Math.max(1, viewportHeight - controlsHeight) / CONFIG.height,
+    );
+    const width = CONFIG.width * fit;
+    const height = CONFIG.height * fit;
+    if (display) {
+      display.style.width = `${width}px`;
+      display.style.height = `${height}px`;
+    }
+    host.style.setProperty('--stage-width', `${width}px`);
+    for (const cached of renderers.values())
+      void cached
+        .then((themeRenderer) => themeRenderer.resize(width, height, devicePixelRatio))
+        .catch(() => {});
+    renderer.resize(width, height, devicePixelRatio);
+    const canvas = surfaces.get(preferences.theme)?.querySelector('canvas');
     if (canvas) {
-      host.style.setProperty('--field-width', `${canvas.clientWidth}px`);
-      host.style.setProperty('--field-height', `${canvas.clientHeight}px`);
+      const bounds = canvas.getBoundingClientRect();
+      host.style.setProperty('--field-width', `${bounds.width}px`);
+      host.style.setProperty('--field-height', `${bounds.height}px`);
     }
   };
+  async function selectTheme(theme: ThemeId): Promise<void> {
+    let pending = renderers.get(theme);
+    if (!pending) {
+      const surface = makeSurface(theme);
+      pending = RENDERER_FACTORIES[theme](surface);
+      renderers.set(theme, pending);
+    }
+    try {
+      const selected = await pending;
+      if (theme !== desiredTheme) return;
+      renderer = selected;
+      preferences.theme = theme;
+      for (const [id, surface] of surfaces) surface.style.display = id === theme ? 'flex' : 'none';
+      if (!autonomous) savePreferences(preferences);
+      resize();
+      ui.refresh();
+    } catch {
+      desiredTheme = preferences.theme;
+      renderers.delete(theme);
+      const surface = surfaces.get(theme);
+      surface?.remove();
+      surfaces.delete(theme);
+    }
+  }
   new ResizeObserver(resize).observe(ui.stage);
+  window.addEventListener('resize', resize);
+  window.visualViewport?.addEventListener('resize', resize);
   resize();
   let previousTime: number | null = null;
   let accumulator = 0;
   let debugFrameCount = 0;
   let debugElapsed = 0;
   let debugFPS = 0;
+  let benchmarkDisplay = 'BENCHMARK · SAMPLING';
   const render = () => {
     const attract = state.phase === GamePhase.Title || state.phase === GamePhase.Screensaver;
     const shownState = autonomous || attract ? demo : state;
@@ -156,8 +268,9 @@ export async function bootGame(host: HTMLElement): Promise<void> {
       preferences.music,
       preferences.sfx,
       false,
-      false,
       true,
+      true,
+      preferences.theme,
     );
     if (!autonomous && state.phase === GamePhase.GameOver && !scorePrompted) {
       scorePrompted = true;
@@ -170,7 +283,10 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     if (!autonomous && !attract) audio.update(state, frameEvents, preferences);
     else audio.pause();
     if (debug)
-      ui.debug(`${debugFPS.toFixed(0)} FPS · ${shownState.phase} · TICK ${shownState.tick}`);
+      ui.debug(
+        `${debugFPS.toFixed(0)} FPS · ${shownState.phase} · TICK ${shownState.tick}\n[I] SHIELD ${invulnerable ? 'ON' : 'OFF'} · [K] NEXT WAVE`,
+      );
+    if (benchmark) ui.debug(benchmarkDisplay);
     frameEvents = [];
     demoEvents = [];
   };
@@ -253,6 +369,22 @@ export async function bootGame(host: HTMLElement): Promise<void> {
       },
     };
   }
+  if (benchmark) {
+    window.__SPACE_ATTACK_BENCHMARK__ = {
+      snapshot: () => {
+        const canvas = surfaces.get(preferences.theme)?.querySelector('canvas');
+        return benchmark.snapshot({
+          theme: preferences.theme,
+          width: canvas?.width ?? CONFIG.width,
+          height: canvas?.height ?? CONFIG.height,
+          pixelRatio: devicePixelRatio,
+          renderer: 'webgl2',
+          wave: demo.wave,
+          tick: demo.tick,
+        });
+      },
+    };
+  }
   const scheduleSave = (now: number) => {
     if (autonomous || idleSavePending || now - lastPeriodicSave < 4000 || !isActive(state)) return;
     lastPeriodicSave = now;
@@ -267,6 +399,7 @@ export async function bootGame(host: HTMLElement): Promise<void> {
   const frame = (now: number) => {
     if (!document.hidden) {
       const elapsed = previousTime === null ? 0 : Math.max(0, now - previousTime);
+      if (previousTime !== null) benchmark?.sample(elapsed);
       previousTime = now;
       accumulator += Math.min(elapsed, 100);
       let ticks = 0;
@@ -282,6 +415,9 @@ export async function bootGame(host: HTMLElement): Promise<void> {
         debugFPS = (debugFrameCount * 1000) / debugElapsed;
         debugElapsed = 0;
         debugFrameCount = 0;
+        const report = window.__SPACE_ATTACK_BENCHMARK__?.snapshot();
+        if (report)
+          benchmarkDisplay = `BENCHMARK ${report.seed} · ${report.theme.toUpperCase()} · ${report.width}×${report.height}\nAVG ${report.averageMs.toFixed(2)} MS · P95 ${report.p95Ms.toFixed(2)} MS · DROP ${report.estimatedDroppedFrames}`;
       }
       scheduleSave(now);
       render();
