@@ -1,0 +1,56 @@
+# Space Attack build contract
+
+Ship Tier 1 first, deploy it, then add Tier 2 and Tier 3 without weakening the earlier gates. The primary game is a 4:3 arcade shooter with a 320 by 240 logical playfield. All art, fonts and sound are generated from source. Source files contain no code comments. Production code contains no console calls outside explicit benchmark mode.
+
+## Ownership and parallel work
+
+| Unit                     | Owner role                               | Allowed paths                                                                               | Dependencies                   |
+| ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------ |
+| Contracts and acceptance | Astra orchestrator                       | PLAN.md, TASKS.md, DECISIONS.md, src/core/types.ts, src/core/config.ts, src/themes/types.ts | None                           |
+| Toolchain and deployment | Sol 6.1                                  | package files, Vite configuration, CI, HTML, README                                         | Contracts                      |
+| Simulation               | Sol 6.1                                  | src/core excluding contract files                                                           | Contracts                      |
+| Retro art and renderer   | Astra design plus Sol 6.1 implementation | src/themes/retro, src/render                                                                | Contracts                      |
+| App and controls         | Sol 6.1                                  | src/app, src/main.ts, src/style.css                                                         | Contracts and renderer         |
+| Persistence and demo     | Sol 6.1                                  | src/platform, src/demo                                                                      | Contracts                      |
+| Generated audio          | Sol 6.1                                  | src/audio, theme music and sfx files                                                        | Contracts                      |
+| Core test suite          | Sol 6.1                                  | tests/core                                                                                  | Core API                       |
+| Browser QA               | Astra                                    | tests/e2e, QA evidence                                                                      | Runnable integration           |
+| Modern and benchmark     | Sol 6.1                                  | src/themes/modern, src/benchmark                                                            | Tier 1 deployed, Tier 2 stable |
+
+Workers use isolated branches and worktrees. They record tradeoffs in their own decision fragment for integration into DECISIONS.md. Astra reviews each unit before it enters codex/integration. Main contains only runnable checkpoints. Tier 1 release requires lint, formatting, typecheck, core tests, build and a browser playthrough through at least three waves followed by game over.
+
+## Module boundaries and exact interfaces
+
+`src/core` imports no Pixi, DOM, browser APIs, Date or Math.random. `src/core/types.ts` and `config.ts` are the shared source of truth. Core exports `createGame(seed: number): GameState`, `step(state: GameState, input: InputFrame): readonly GameEvent[]`, and `getDifficulty(wave: number): Difficulty` from `src/core/index.ts`. A step advances exactly one 1/60-second tick. Core mutates its own state and returns only the events for that step. Callers consume events before the next step. New game always calls createGame and replaces the old object. Start moves the new object from title to playing.
+
+The app owns requestAnimationFrame, the fixed-step accumulator, input sources, rendering, query parsing, persistence, audio unlock, lifecycle events and theme selection. It clamps elapsed time to 100 ms and limits catch-up to six ticks. Keyboard, touch and AI all produce InputFrame. Input contains actions and never identifies a device. The app can request pause but never directly changes collision or scoring fields. A debug input is explicit and only enabled through the debug query.
+
+Themes receive DeepReadonly<GameState> and readonly events through ThemeRenderer. They cannot mutate state or emit core events. Rendering randomness uses a separate visual seed. Themes cache generated textures and pool transient particles. Theme switching constructs or selects a renderer and keeps the exact current core state and RNG. Theme audio assets remain in each theme directory; shared playback code lives under src/audio.
+
+## State and transitions
+
+GamePhase is a plain enum. TRANSITIONS is the sole permitted transition table. Title idles into Screensaver after 600 ticks; activity returns Screensaver to Title. Title and Screensaver show the same menu and a separate silent demo core. Start enters Playing. A fatal collision or fuel exhaustion spends one life and enters Respawning if any lives remain, otherwise GameOver. Respawning lasts 60 ticks, refills fuel, then enters Playing with 120 invulnerability ticks. No new dives launch during invulnerability. Destroying the last enemy enters WaveClear for 120 ticks, then creates the next formation and refills fuel. Pause remembers the previous phase and its timer; Continue restores it without advancing simulation. Pause is available in Playing, Respawning and WaveClear. New game at any screen replaces the whole object in the app. GameOver clears the saved run.
+
+State stores schema version, seed, current uint32 RNG, tick, phase, prior phase, phase timer, wave, score, lives, the earned 5000-point life marker, fuel and its timer, hit-stop timer, player, formation drift, dive schedule, enemy array and fixed bullet pools. Enemy IDs remain stable for the current wave. Every enemy retains its formation slot and dive group. No presentation preferences or high scores belong in core state.
+
+## Rules and events
+
+The field is 320 by 240. Player stays at y=212 with a 7 by 7 hitbox inside its larger sprite. Player has at most two active bullets; inactive pool slots are reused immediately after a hit. Bullets move vertically. Player bullets collide with enemy bullets before enemies. Enemies use core hitboxes independent of their sprites. Each row has distinct artwork and color; the central four enemies of the first row are flagships and the four remaining rows each contain eight enemies.
+
+Formation drifts as one unit. Divers steer toward the player's position, stay in horizontal bounds, switch horizontal direction at most once per 60 ticks, shoot only while diving and no faster than once per 30 ticks in wave one, and return to their original formation slot after passing the bottom. Difficulty is a bounded formula derived from wave plus exported configuration constants. Dive speed, launch frequency and concurrent count increase. A flagship can launch with two escorts. Diving kills score double; a diving flagship scores extra for escorts already destroyed in its dive group. A crossing of 5000 grants exactly one extra life.
+
+Fuel drains in discrete chunks. Its configurable default is three units per 120 active ticks from a capacity of 100. Death always costs exactly one life, including fuel exhaustion. Initial lives are three. A kill causes three simulation ticks of hit-stop. Events are discriminated unions for shot, kill, hit, dive, wave, phase, bonus and bullet cancellation. Events carry the positions and points needed for visuals and sound. Core determines all points and timing.
+
+## Persistence and modes
+
+Use localStorage only, in separate versioned run, preferences and scores entries. The run includes every simulation field and RNG. Validate loaded unknown data before use. A valid run hydrates into Pause while preserving its resumable phase and timer. Save on pause, pagehide, loss of focus, visibility hide, wave start and at a short periodic interval scheduled by requestIdleCallback when available. Storage failures must not stop play. Scores and preferences also hydrate and persist independently. Store the top five scores and exactly three normalized initials for qualifying entries.
+
+`?demo=1&seed=123` runs a separate unsaved AI core. `?benchmark=1&seed=123` enables the same deterministic input driver plus renderer frame statistics, average, percentiles and dropped-frame estimate. `?debug=1` enables hitboxes, FPS, invulnerability and wave skip. Demo never alters the player save or scores. The title background demo is silent. WebGL 2 is required initially; WebGPU stays behind a disabled feature flag.
+
+Audio libraries load only after the first keyboard or touch gesture. A shared unlock promise resumes the Web Audio context inside that gesture. Generated SFX buffers and original theme music patterns are cached. Music and effects toggle independently. Pause silences audio; retro stops immediately and modern fades. Tempo derives from difficulty and enemies remaining. Reduced motion disables shake and reduces flashes.
+
+## Verification and release
+
+Core tests exercise deterministic replay and a checked-in replay digest, both collision directions, bullet cancellation, two-shot limit, row and dive scores, escort bonus, life loss, extra life, fuel, invulnerability, dive limits, return to formation, phase transitions and progression. Persistence tests cover resumed RNG and malformed saves. Playwright exercises actual keyboard flow, three waves, game over, pause/continue, reload, touch and theme continuity when available. Tests must test behavior and avoid unnecessary UI snapshots.
+
+Use Bun and current Vite Plus documentation for installation and commands. Pixi and filters use compatible current versions. CI keeps one verification job and one GitHub Pages deployment job. Tier 1 deploys immediately after acceptance. README includes the live URL, controls, commands and verified limitations. Unfinished higher-tier features are hidden behind flags.

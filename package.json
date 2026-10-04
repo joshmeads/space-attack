@@ -1,0 +1,36 @@
+{
+  "name": "space-attack",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vp dev",
+    "build": "vp build",
+    "preview": "vp preview",
+    "check": "vp check",
+    "format": "vp fmt",
+    "test": "vp test",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "pixi-filters": "6.1.5",
+    "pixi.js": "8.22.0",
+    "tone": "15.1.22",
+    "zzfx": "1.4.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "26.6.4",
+    "typescript": "7.0.2",
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
+    "vite-plus": "1.0.0"
+  },
+  "overrides": {
+    "vite": "npm:@voidzero-dev/vite-plus-core@1.0.0",
+    "vitest": "5.0.1"
+  },
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "packageManager": "bun@1.4.2"
+}
