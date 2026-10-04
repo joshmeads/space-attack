@@ -80,3 +80,27 @@ test('touch controls and the playfield fit on a narrow mobile screen', async ({
   await page.screenshot({ path: testInfo.outputPath('mobile-pause.png') });
   await context.close();
 });
+
+test('a corrupt saved life count falls back to title without crashing the HUD', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('?debug=1&seed=1982');
+  await page.waitForFunction('Boolean(window.__SPACE_ATTACK__)');
+  await page.keyboard.press('Enter');
+  await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Playing);
+  await page.keyboard.press('p');
+  await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Paused);
+  const saved = await snapshot(page);
+  await page.addInitScript(
+    ({ key, run }) =>
+      localStorage.setItem(key, JSON.stringify({ ...run, lives: Number.MAX_SAFE_INTEGER })),
+    { key: runKey, run: saved },
+  );
+  await page.reload();
+  await page.waitForFunction('Boolean(window.__SPACE_ATTACK__)');
+  await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Title);
+  await expect(page.getByRole('button', { name: 'NEW GAME', exact: true })).toBeVisible();
+  expect(errors).toEqual([]);
+});
