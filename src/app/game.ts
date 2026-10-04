@@ -196,9 +196,8 @@ export async function bootGame(host: HTMLElement): Promise<void> {
       viewportWidth / CONFIG.width,
       Math.max(1, viewportHeight - controlsHeight) / CONFIG.height,
     );
-    const scale = fit >= 1 ? Math.floor(fit) : fit;
-    const width = CONFIG.width * scale;
-    const height = CONFIG.height * scale;
+    const width = CONFIG.width * fit;
+    const height = CONFIG.height * fit;
     if (display) {
       display.style.width = `${width}px`;
       display.style.height = `${height}px`;
@@ -206,15 +205,14 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     host.style.setProperty('--stage-width', `${width}px`);
     for (const cached of renderers.values())
       void cached
-        .then((themeRenderer) =>
-          themeRenderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio),
-        )
+        .then((themeRenderer) => themeRenderer.resize(width, height, devicePixelRatio))
         .catch(() => {});
-    renderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio);
+    renderer.resize(width, height, devicePixelRatio);
     const canvas = surfaces.get(preferences.theme)?.querySelector('canvas');
     if (canvas) {
-      host.style.setProperty('--field-width', `${canvas.clientWidth}px`);
-      host.style.setProperty('--field-height', `${canvas.clientHeight}px`);
+      const bounds = canvas.getBoundingClientRect();
+      host.style.setProperty('--field-width', `${bounds.width}px`);
+      host.style.setProperty('--field-height', `${bounds.height}px`);
     }
   };
   async function selectTheme(theme: ThemeId): Promise<void> {
