@@ -1,14 +1,14 @@
 # Space Attack tasks
 
-Active tier: **Tier 1**. Advance to Tier 2 only after the Tier 1 build is deployed and CI passes. Advance to Tier 3 only after Tier 2 verification passes. The overall goal stays active until all requested tiers are delivered or a concrete external blocker is reported.
+Active tier: **Tier 2**. Advance to Tier 2 only after the Tier 1 build is deployed and CI passes. Advance to Tier 3 only after Tier 2 verification passes. The overall goal stays active until all requested tiers are delivered or a concrete external blocker is reported.
 
 - [x] Establish shared contracts and module ownership in PLAN.md.
-- [ ] Set up Bun, Vite Plus, Pixi, Playwright and simple CI.
-- [ ] Implement deterministic simulation and focused core tests.
-- [ ] Generate original retro sprites, font and renderer.
-- [ ] Connect keyboard input, loop, HUD, title, pause and game over.
-- [ ] Play at least three waves and reach game over on integration.
-- [ ] Pass Tier 1 checks and deploy GitHub Pages.
+- [x] Set up Bun, Vite Plus, Pixi, Playwright and simple CI.
+- [x] Implement deterministic simulation and focused core tests.
+- [x] Generate original retro sprites, font and renderer.
+- [x] Connect keyboard input, loop, HUD, title, pause and game over.
+- [x] Play at least three waves and reach game over on integration.
+- [x] Pass Tier 1 checks and deploy GitHub Pages.
 - [ ] Add validated saves, continue, touch controls, high scores and preferences.
 - [ ] Add generated music, effects, reduced motion and visual feedback.
 - [ ] Add silent title demo and screensaver.
