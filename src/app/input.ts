@@ -2,10 +2,14 @@ import { Command, type Direction, type InputFrame } from '../core/types';
 
 export type MenuAction =
   | 'start'
+  | 'restart'
   | 'pause'
   | 'music'
   | 'sfx'
   | 'theme'
+  | 'theme-classic'
+  | 'theme-retro'
+  | 'theme-modern'
   | 'title'
   | 'invulnerable'
   | 'skipwave';
@@ -32,6 +36,7 @@ export class InputController {
         'm',
         'n',
         't',
+        'r',
         'i',
         'k',
       ];
@@ -54,6 +59,7 @@ export class InputController {
         m: 'music',
         n: 'sfx',
         t: 'theme',
+        r: 'restart',
         i: 'invulnerable',
         k: 'skipwave',
       };

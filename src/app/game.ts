@@ -24,6 +24,24 @@ import { InputController, type MenuAction } from './input';
 import { GameUI } from './ui';
 import { createBenchmark, type BenchmarkSnapshot } from './benchmark';
 
+const THEME_ORDER: readonly ThemeId[] = ['classic', 'retro', 'modern'];
+const THEME_ACTIONS: Partial<Record<MenuAction, ThemeId>> = {
+  'theme-classic': 'classic',
+  'theme-retro': 'retro',
+  'theme-modern': 'modern',
+};
+const RENDERER_FACTORIES: Record<ThemeId, (host: HTMLElement) => Promise<ThemeRenderer>> = {
+  classic: async (host) => {
+    const { createClassicRenderer } = await import('../themes/classic/renderer');
+    return createClassicRenderer(host);
+  },
+  retro: createRetroRenderer,
+  modern: async (host) => {
+    const { createModernRenderer } = await import('../themes/modern/renderer');
+    return createModernRenderer(host);
+  },
+};
+
 interface DebugAPI {
   snapshot(): DeepReadonly<GameState>;
   skipWave(): void;
@@ -48,8 +66,10 @@ export async function bootGame(host: HTMLElement): Promise<void> {
   const preferences = loadPreferences();
   const queryTheme = query.get('theme');
   const initialTheme =
-    queryTheme === 'retro' || queryTheme === 'modern' ? queryTheme : preferences.theme;
-  preferences.theme = 'retro';
+    queryTheme === 'classic' || queryTheme === 'retro' || queryTheme === 'modern'
+      ? queryTheme
+      : preferences.theme;
+  preferences.theme = initialTheme;
   let desiredTheme: ThemeId = initialTheme;
   let scores = loadScores();
   let previousBest = scores[0]?.score ?? 0;
@@ -93,8 +113,15 @@ export async function bootGame(host: HTMLElement): Promise<void> {
       skipWave = true;
       return;
     }
+    const selectedTheme = THEME_ACTIONS[requested];
+    if (selectedTheme) {
+      desiredTheme = selectedTheme;
+      void selectTheme(selectedTheme);
+      return;
+    }
     if (requested === 'theme') {
-      desiredTheme = desiredTheme === 'retro' ? 'modern' : 'retro';
+      desiredTheme =
+        THEME_ORDER[(THEME_ORDER.indexOf(desiredTheme) + 1) % THEME_ORDER.length] ?? 'classic';
       void selectTheme(desiredTheme);
       return;
     }
@@ -114,6 +141,7 @@ export async function bootGame(host: HTMLElement): Promise<void> {
       else if (state.phase === GamePhase.GameOver) newGame();
     }
     if (requested === 'title') newGame();
+    if (requested === 'restart' && state.phase === GamePhase.Paused) newGame();
     if (requested === 'pause') {
       if (state.phase === GamePhase.Paused) pendingCommand = Command.Continue;
       else if (isActive(state)) pendingCommand = Command.Pause;
@@ -147,10 +175,10 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     return surface;
   };
   try {
-    const retroPromise = createRetroRenderer(makeSurface('retro'));
-    renderers.set('retro', retroPromise);
-    renderer = await retroPromise;
-    const surface = surfaces.get('retro');
+    const initialPromise = RENDERER_FACTORIES[initialTheme](makeSurface(initialTheme));
+    renderers.set(initialTheme, initialPromise);
+    renderer = await initialPromise;
+    const surface = surfaces.get(initialTheme);
     if (surface) surface.style.display = 'flex';
   } catch {
     ui.error(
@@ -159,26 +187,39 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     return;
   }
   const resize = () => {
+    const display = ui.stage.parentElement;
+    const controls = host.querySelector<HTMLElement>('.touch-controls');
+    const controlsHeight = controls?.getBoundingClientRect().height ?? 0;
+    const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+    const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+    const fit = Math.min(
+      viewportWidth / CONFIG.width,
+      Math.max(1, viewportHeight - controlsHeight) / CONFIG.height,
+    );
+    const width = CONFIG.width * fit;
+    const height = CONFIG.height * fit;
+    if (display) {
+      display.style.width = `${width}px`;
+      display.style.height = `${height}px`;
+    }
+    host.style.setProperty('--stage-width', `${width}px`);
     for (const cached of renderers.values())
       void cached
-        .then((themeRenderer) =>
-          themeRenderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio),
-        )
+        .then((themeRenderer) => themeRenderer.resize(width, height, devicePixelRatio))
         .catch(() => {});
-    renderer.resize(ui.stage.clientWidth, ui.stage.clientHeight, devicePixelRatio);
+    renderer.resize(width, height, devicePixelRatio);
     const canvas = surfaces.get(preferences.theme)?.querySelector('canvas');
     if (canvas) {
-      host.style.setProperty('--field-width', `${canvas.clientWidth}px`);
-      host.style.setProperty('--field-height', `${canvas.clientHeight}px`);
+      const bounds = canvas.getBoundingClientRect();
+      host.style.setProperty('--field-width', `${bounds.width}px`);
+      host.style.setProperty('--field-height', `${bounds.height}px`);
     }
   };
   async function selectTheme(theme: ThemeId): Promise<void> {
     let pending = renderers.get(theme);
     if (!pending) {
       const surface = makeSurface(theme);
-      pending = import('../themes/modern/renderer').then(({ createModernRenderer }) =>
-        createModernRenderer(surface),
-      );
+      pending = RENDERER_FACTORIES[theme](surface);
       renderers.set(theme, pending);
     }
     try {
@@ -199,6 +240,8 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     }
   }
   new ResizeObserver(resize).observe(ui.stage);
+  window.addEventListener('resize', resize);
+  window.visualViewport?.addEventListener('resize', resize);
   resize();
   let previousTime: number | null = null;
   let accumulator = 0;
@@ -381,7 +424,6 @@ export async function bootGame(host: HTMLElement): Promise<void> {
     }
     requestAnimationFrame(frame);
   };
-  if (initialTheme === 'modern') await selectTheme('modern');
   render();
   requestAnimationFrame(frame);
 }
