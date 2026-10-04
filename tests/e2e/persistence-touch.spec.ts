@@ -58,6 +58,10 @@ test('touch controls and the playfield fit on a narrow mobile screen', async ({
   await page.waitForFunction('Boolean(window.__SPACE_ATTACK__)');
   await page.getByRole('button', { name: /new game/i }).tap();
   await expect.poll(async () => (await snapshot(page)).phase).toBe(GamePhase.Playing);
+  const field = await page.locator('canvas:visible').boundingBox();
+  if (!field) throw new Error('The mobile playfield has no rendered bounds');
+  expect(field.width).toBe(390);
+  expect(field.height).toBeCloseTo(292.5, 1);
   const left = page.getByRole('button', { name: 'Move left', exact: true });
   const fire = page.getByRole('button', { name: 'Fire', exact: true });
   const pause = page.getByRole('button', { name: 'Pause', exact: true });

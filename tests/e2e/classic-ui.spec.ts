@@ -18,6 +18,10 @@ test('Classic starts with the shared pyramid and pause shortcuts use the compact
   const bounds = await page.locator('canvas:visible').boundingBox();
   if (!bounds) throw new Error('The playfield has no rendered bounds');
   expect(bounds.width / bounds.height).toBeCloseTo(4 / 3, 5);
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error('The browser viewport is not defined');
+  expect(bounds.width).toBeCloseTo(Math.min(viewport.width, (viewport.height * 4) / 3), 1);
+  expect(bounds.height).toBeCloseTo(Math.min(viewport.height, (viewport.width * 3) / 4), 1);
   const initial = await page.evaluate<GameState>('window.__SPACE_ATTACK__.snapshot()');
   expect(initial.enemies).toHaveLength(41);
   expect(
@@ -58,4 +62,10 @@ test('Classic starts with the shared pyramid and pause shortcuts use the compact
   expect(fresh.wave).toBe(1);
   expect(fresh.score).toBe(0);
   expect(fresh.lives).toBe(3);
+  await page.evaluate('window.__SPACE_ATTACK__.advance(120)');
+  const playingTick = await page.evaluate<number>('window.__SPACE_ATTACK__.snapshot().tick');
+  await page.keyboard.press('r');
+  expect(
+    await page.evaluate<number>('window.__SPACE_ATTACK__.snapshot().tick'),
+  ).toBeGreaterThanOrEqual(playingTick);
 });
