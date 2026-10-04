@@ -144,7 +144,11 @@ export async function bootGame(host: HTMLElement): Promise<void> {
       shownState,
       autonomous || attract ? demoEvents : frameEvents,
       accumulator / (1000 / CONFIG.tickRate),
-      { reducedMotion, debugHitboxes: debug, dimmed: attract || state.phase === GamePhase.Paused },
+      {
+        reducedMotion,
+        debugHitboxes: debug,
+        dimmed: (!autonomous && attract) || state.phase === GamePhase.Paused,
+      },
     );
     ui.render(
       autonomous ? demo : state,
