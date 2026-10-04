@@ -43,3 +43,15 @@
 ## Repository publication
 
 GitHub returned HTTP 422 when enabling Pages on the private repository because the account plan does not support it. Applied the user-approved public repository fallback and enabled workflow-based Pages. GitHub blocked the first push under email privacy protection; all unpublished initial commits were rewritten with the account noreply address before publication.
+
+## Tier 1 verification
+
+The integration build at e1345cd passed all 34 core tests, including frozen full-state/event replay digests and snapshot continuation. A natural seeded AI run destroyed 108 enemies across three formations, reached wave four and then game over through neutral input. This run used no debug skips or invulnerability.
+
+Chromium browser QA verified the actual WebGL 2 context, keyboard movement and firing, accurate HUD, pause/continue, three debug wave transitions, game over and a fresh restart with no page exceptions. A separate browser playtest confirmed three shot kills, diving enemies, enemy fire and a real respawn that spent one life and refilled fuel. Formatting, lint, type checks and production build passed. Tier 1 remains active until GitHub CI and live deployment are confirmed.
+
+## Tier 1 deployed; Tier 2 active
+
+GitHub Actions run 37184689147 completed validation and deployment successfully. An independent public-site playtest confirmed HTTP 200 for the page and all nine assets, a real WebGL 2 context, keyboard play, 290 points from eight kills, enemy dives, three lives and no browser errors. The live URL is https://joshmeads.github.io/space-attack/. Tier 1 is accepted and Tier 2 is now active.
+
+The requested tighter formation is approved at startX 83, horizontal spacing 22 and vertical spacing 15, retaining startY 42. Eight columns remain centered at x=160 and safely inside both edges throughout drift. The fuel strip will be continuous while core fuel still drains in chunks. This intentional gameplay geometry change requires reviewing and replacing the replay baseline. The public before image is retained outside the repository at /tmp/space-attack-playtest-live-before-playing.png.

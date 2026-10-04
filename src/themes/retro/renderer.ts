@@ -380,8 +380,6 @@ export async function createRetroRenderer(host: HTMLElement): Promise<ThemeRende
           fuel
             .rect(42, 231, filled, 4)
             .fill(state.fuel <= 25 ? RETRO_PALETTE.red : RETRO_PALETTE.mint);
-        for (let index = 1; index < 10; index++)
-          fuel.rect(42 + index * 17, 231, 1, 4).fill(RETRO_PALETTE.background);
         lastFuel = state.fuel;
       }
       for (let index = 0; index < lives.length; index++) {
