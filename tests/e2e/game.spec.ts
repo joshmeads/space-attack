@@ -8,7 +8,7 @@ async function phase(page: Page, expected: GamePhase, timeout = 10_000) {
 }
 
 test('keyboard controls, WebGL 2, three waves, and game over', async ({ page }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(45_000);
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('?debug=1&seed=123');
@@ -17,7 +17,11 @@ test('keyboard controls, WebGL 2, three waves, and game over', async ({ page }) 
   expect(
     await page.locator('canvas').evaluate((canvas) => {
       if (!(canvas instanceof HTMLCanvasElement)) return false;
-      return canvas.getContext('webgl2') instanceof WebGL2RenderingContext;
+      const context = canvas.getContext('webgl2');
+      return (
+        context instanceof WebGL2RenderingContext &&
+        String(context.getParameter(context.VERSION)).startsWith('WebGL 2.0')
+      );
     }),
   ).toBe(true);
   await page.keyboard.press('Enter');
@@ -46,6 +50,10 @@ test('keyboard controls, WebGL 2, three waves, and game over', async ({ page }) 
   expect(stillPaused.player).toEqual(paused.player);
   expect(stillPaused.fuel).toBe(paused.fuel);
   expect(stillPaused.enemies).toEqual(paused.enemies);
+  await expect(page.getByTestId('score')).toHaveText(String(paused.score).padStart(6, '0'));
+  await expect(page.getByTestId('wave')).toHaveText(String(paused.wave).padStart(2, '0'));
+  await expect(page.getByTestId('fuel')).toHaveAttribute('aria-valuenow', String(paused.fuel));
+  await expect(page.getByTestId('lives')).toHaveText('▲ '.repeat(paused.lives).trim());
   await expect(page.getByRole('button', { name: /continue/i })).toBeVisible();
   await page.keyboard.press('Escape');
   await phase(page, GamePhase.Playing);
@@ -55,9 +63,12 @@ test('keyboard controls, WebGL 2, three waves, and game over', async ({ page }) 
     await phase(page, GamePhase.Playing);
   }
   await page.evaluate('window.__SPACE_ATTACK__.invulnerable(false)');
-  await phase(page, GamePhase.GameOver, 140_000);
+  await page.evaluate('window.__SPACE_ATTACK__.advance(18_000)');
+  await phase(page, GamePhase.GameOver);
   expect((await snapshot(page)).lives).toBe(0);
-  await expect(page.getByRole('button', { name: /new game/i })).toBeVisible();
+  const playAgain = page.getByRole('button', { name: /play again/i });
+  await expect(playAgain).toBeVisible();
+  await playAgain.focus();
   await page.keyboard.press('Enter');
   await phase(page, GamePhase.Playing);
   const fresh = await snapshot(page);
